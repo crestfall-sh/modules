@@ -1,0 +1,25 @@
+{
+  "name": "modules",
+  "version": "1.0.0",
+  "description": "",
+  "author": "joshxyzhimself <joshxyzhimself@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/joshxyzhimself/modules",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joshxyzhimself/modules.git"
+  },
+  "dependencies": {
+    "luxon": "^2.4.0",
+    "mime-types": "^2.1.35",
+    "node-fetch": "^3.2.4",
+    "postgres": "^3.2.4",
+    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.10.0",
+    "@grammyjs/types": "github:grammyjs/types#v2.7.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.3.0",
+    "eslint-plugin-react": "^7.26.1",
+    "eslint-plugin-react-hooks": "^4.2.0"
+  }
+}
