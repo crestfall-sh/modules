@@ -2,7 +2,6 @@
 
 import fs from 'fs';
 import path from 'path';
-import { assert } from './assert.mjs';
 
 const app_config_path = path.join(process.cwd(), 'config.json');
 
