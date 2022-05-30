@@ -6,7 +6,13 @@ export interface options {
   headers?: Record<string, string>;
   query?: Record<string, string>;
   files?: File[];
-  data?: Record<string, any>;
+  data?: any;
 }
 
-export type request = (url: string, options?: options) => Promise<any>;
+export interface response {
+  status: number;
+  headers: Headers;
+  data: any;
+}
+
+export type request = (url: string, options?: options) => Promise<response>;

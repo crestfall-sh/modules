@@ -75,27 +75,40 @@ export const request = async (url, options) => {
 
     const query = new URLSearchParams(options.query);
     const url_with_query = `${url}?${query.toString()}`;
-    const signal = controllers.has(id) ? controllers.get(id).signal : undefined;
+    const signal = controllers.has(id) === true ? controllers.get(id).signal : undefined;
     const response = await fetch(url_with_query, { method, headers, body, signal });
 
     if (response.headers.has('content-type') === true) {
       if (response.headers.get('content-type').includes('application/json') === true) {
         const response_json = await response.json();
-        return response_json;
+        return {
+          status: response.status,
+          headers: response.headers,
+          data: response_json,
+        };
       }
     }
+
+    return {
+      status: response.status,
+      headers: response.headers,
+      data: null,
+    };
 
   } catch (error) {
     if (error.name !== 'AbortError') {
       console.error(error);
-      alert(error.message);
+      throw error;
     }
   } finally {
     const id = options.id || null;
-    if (controllers.has(id) === true) {
-      controllers.delete(id);
+    if (typeof id === 'string') {
+      if (controllers.has(id) === true) {
+        controllers.delete(id);
+      }
     }
   }
 
   return null;
+
 };
