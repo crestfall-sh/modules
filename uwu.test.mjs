@@ -2,16 +2,13 @@
 
 import os from 'os';
 import fs from 'fs';
-import url from 'url';
 import path from 'path';
 import worker_threads from 'worker_threads';
 import fetch from 'node-fetch';
 import { assert } from './assert.mjs';
+import { __filename, __dirname } from './constants.mjs';
 import * as uwu from './uwu.mjs';
 import * as proc from './proc.mjs';
-
-const __filename = url.fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const test_html = `
   <html>

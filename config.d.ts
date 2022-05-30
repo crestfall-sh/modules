@@ -11,6 +11,11 @@ export interface config {
 
   telegram_token: string;
 
+  s3_region: string;
+  s3_hostname: string;
+  s3_access_key: string;
+  s3_secret_key: string;
+
 }
 
 export const config: config;
