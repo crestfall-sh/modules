@@ -183,7 +183,6 @@ export const create_handler = (handler) => {
      */
     const request = {
       url: req.getUrl(),
-      query: req.getQuery(),
       method: req.getMethod(),
       headers: {
         host: req.getHeader('host'),
@@ -197,12 +196,13 @@ export const create_handler = (handler) => {
         x_forwarded_host: req.getHeader('x-forwarded-host'),
         x_forwarded_for: req.getHeader('x-forwarded-for'),
       },
-      ip_address: Buffer.from(res.getRemoteAddressAsText()).toString(),
+      query: new URLSearchParams(req.getQuery()),
       body: {
         buffer: null,
         json: null,
         parts: null,
       },
+      ip_address: Buffer.from(res.getRemoteAddressAsText()).toString(),
     };
 
     /**

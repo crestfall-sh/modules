@@ -80,9 +80,9 @@ export interface request_body {
 
 export interface request {
   url: string;
-  query: string;
   method: string;
   headers: request_headers;
+  query: URLSearchParams;
   body: request_body;
   ip_address: string;
   error?: Error;
