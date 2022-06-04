@@ -18,7 +18,12 @@ const file_buffer = fs.readFileSync(path.join(__dirname, 'dog.png'));
 
 process.nextTick(async () => {
 
-  const s3c = s3.create_s3c(config.s3_region, config.s3_hostname, config.s3_access_key, config.s3_secret_key);
+  const s3c = s3.create_s3c(
+    String(config.s3_region),
+    String(config.s3_hostname),
+    String(config.s3_access_key),
+    String(config.s3_secret_key),
+  );
 
   const buckets_response = await s3c.bucket_list();
 

@@ -13,11 +13,11 @@ assert(typeof config.postgresql_password === 'string');
 assert(typeof config.postgresql_database === 'string');
 
 export const pg_config = {
-  host: config.postgresql_host,
-  port: config.postgresql_port,
-  username: config.postgresql_username,
-  password: config.postgresql_password,
-  database: config.postgresql_database,
+  host: String(config.postgresql_host),
+  port: Number(config.postgresql_port),
+  username: String(config.postgresql_username),
+  password: String(config.postgresql_password),
+  database: String(config.postgresql_database),
   max: 16,
   idle_timeout: 0,
   types: { // https://github.com/porsager/postgres/issues/161#issuecomment-801031062
