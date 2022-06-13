@@ -21,19 +21,19 @@ export interface response_headers {
 }
 
 export interface response {
-  aborted?: boolean;
-  ended?: boolean;
-  error?: Error;
+  aborted: boolean;
+  ended: boolean;
+  error: Error;
 
-  status?: number;
-  headers?: response_headers;
+  status: number;
+  headers: response_headers;
 
   file_path?: string;
   file_name?: string;
   file_content_type?: string;
-  file_dispose?: boolean;
-  file_cache?: boolean;
-  file_cache_max_age_ms?: number;
+  file_dispose: boolean;
+  file_cache: boolean;
+  file_cache_max_age_ms: number;
 
   text?: string;
   html?: string;
@@ -65,17 +65,10 @@ export interface request_headers {
   x_forwarded_for: string;
 }
 
-export interface request_body_part {
-  name: string;
-  data: ArrayBuffer;
-  type?: string;
-  filename?: string;
-}
-
 export interface request_body {
   buffer: Buffer;
   json: any;
-  parts: request_body_part[];
+  parts: uws.MultipartField[];
 }
 
 export interface request {

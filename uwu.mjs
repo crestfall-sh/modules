@@ -197,11 +197,7 @@ export const create_handler = (handler) => {
         x_forwarded_for: req.getHeader('x-forwarded-for'),
       },
       query: new URLSearchParams(req.getQuery()),
-      body: {
-        buffer: null,
-        json: null,
-        parts: null,
-      },
+      body: { buffer: null, json: null, parts: null },
       ip_address: Buffer.from(res.getRemoteAddressAsText()).toString(),
     };
 
