@@ -45,6 +45,12 @@ export interface response {
   took?: number;
 }
 
+export interface static_response {
+  file_cache?: boolean;
+  file_cache_max_age_ms?: number;
+  headers?: response_headers;
+}
+
 export interface cached_file { 
   file_name: string;
   file_content_type: string;
@@ -87,7 +93,7 @@ export type initial_handler = (res: uws.HttpResponse, req: uws.HttpRequest) => v
 export type create_handler = (handler: handler) => initial_handler;
 export const create_handler: create_handler;
 
-export type create_static_handler = (app: uws.TemplatedApp, url_pathname: string, local_directory: string, response_override: response) => void;
+export type create_static_handler = (app: uws.TemplatedApp, url_pathname: string, local_directory: string, static_response: static_response) => void;
 export const create_static_handler: create_static_handler;
 
 export type serve_http = (app: uws.TemplatedApp, port_access_type: number, port: number) => Promise<uws.us_listen_socket>;

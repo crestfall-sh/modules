@@ -264,7 +264,7 @@ export const create_handler = (handler) => {
 /**
  * @type {import('./uwu').create_static_handler}
  */
-export const create_static_handler = (app, url_pathname, local_directory, response_override) => {
+export const create_static_handler = (app, url_pathname, local_directory, static_response) => {
   assert(app instanceof Object);
   assert(app.get instanceof Function);
 
@@ -277,12 +277,12 @@ export const create_static_handler = (app, url_pathname, local_directory, respon
   assert(fs.existsSync(local_directory) === true);
   assert(path.isAbsolute(local_directory) === true);
 
-  assert(response_override === undefined || response_override instanceof Object);
+  assert(static_response === undefined || static_response instanceof Object);
 
   const core_static_handler = create_handler(async (response, request) => {
     response.file_path = request.url.replace(url_pathname, local_directory);
-    if (response_override instanceof Object) {
-      Object.assign(response, response_override);
+    if (static_response instanceof Object) {
+      Object.assign(response, static_response);
     }
   });
 
