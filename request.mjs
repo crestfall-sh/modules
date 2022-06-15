@@ -29,13 +29,14 @@ export const request = async (url, options) => {
     assert(typeof url === 'string', 'ERR_INVALID_URL', 'Invalid url.');
     assert(url.includes('?') === false, 'ERR_INVALID_URL', 'Invalid url.');
     assert(options instanceof Object, 'ERR_INVALID_OPTIONS', 'Invalid options.');
+    assert(options.id === undefined || typeof options.id === 'string', 'ERR_INVALID_ID', 'Invalid id.');
+    assert(options.method === undefined || typeof options.method === 'string', 'ERR_INVALID_METHOD', 'Invalid method.');
     assert(options.headers === undefined || options.headers instanceof Object, 'ERR_INVALID_HEADERS', 'Invalid headers.');
     assert(options.query === undefined || options.query instanceof Object, 'ERR_INVALID_QUERY', 'Invalid query.');
     assert(options.files === undefined || options.files instanceof Array, 'ERR_INVALID_FILES', 'Invalid files.');
     assert(options.data === undefined || options.data instanceof Object, 'ERR_INVALID_DATA', 'Invalid data.');
 
     const id = options.id || null;
-    assert(id === null || typeof id === 'string', 'ERR_INVALID_ID', 'Invalid id.');
 
     if (typeof id === 'string') {
       if (controllers.has(id) === true) {
@@ -45,33 +46,45 @@ export const request = async (url, options) => {
       controllers.set(id, new AbortController());
     }
 
-    const method = options.method || 'GET';
-    assert(typeof method === 'string', 'ERR_INVALID_METHOD', 'Invalid method.');
-    assert(methods.includes(method) === true, 'ERR_INVALID_METHOD', 'Invalid method.');
+    let method = options.method || null;
 
     const headers = new Headers(options.headers);
 
     let body;
 
-    if (methods_with_body.includes(method) === true) {
-      if (options.files instanceof Array) {
-        assert(headers.has('content-type') === false, 'ERR_INVALID_HEADERS', 'Invalid headers.');
-        body = new FormData();
-        options.files.forEach((file) => {
-          assert(file instanceof File);
-          body.append('files', file);
-        });
-        if (options.data instanceof Object) {
-          body.append('data', new Blob([JSON.stringify(options.data)], { type: 'application/json' }));
-        }
+    if (options.files instanceof Array) {
+      if (method === null) {
+        method = 'POST';
       } else {
-        if (options.data instanceof Object) {
-          assert(headers.has('content-type') === false, 'ERR_INVALID_HEADERS', 'Invalid headers.');
-          headers.set('content-type', 'application/json');
-          body = JSON.stringify(options.data);
-        }
+        assert(methods_with_body.includes(method) === true, 'ERR_INVALID_METHOD', 'Invalid method.');
+      }
+      body = new FormData();
+      options.files.forEach((file) => {
+        assert(file instanceof File);
+        body.append('files', file);
+      });
+    }
+
+    if (options.data instanceof Object) {
+      if (method === null) {
+        method = 'POST';
+      } else {
+        assert(methods_with_body.includes(method) === true, 'ERR_INVALID_METHOD', 'Invalid method.');
+      }
+      if (options.files instanceof Array) {
+        body.append('data', new Blob([JSON.stringify(options.data)], { type: 'application/json' }));
+      } else {
+        assert(headers.has('content-type') === false, 'ERR_INVALID_HEADERS', 'Invalid headers.');
+        headers.set('content-type', 'application/json');
+        body = JSON.stringify(options.data);
       }
     }
+
+    if (method === null) {
+      method = 'GET';
+    }
+
+    assert(methods.includes(method) === true, 'ERR_INVALID_METHOD', 'Invalid method.');
 
     const query = new URLSearchParams(options.query);
     const url_with_query = `${url}?${query.toString()}`;
