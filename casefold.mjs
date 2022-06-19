@@ -1598,6 +1598,9 @@ lines
   .filter((line) => line.trim() !== '')
   .forEach((line) => {
     const [code, status, mapping] = line.split('; ');
+    assert(typeof code === 'string');
+    assert(typeof status === 'string');
+    assert(typeof mapping === 'string');
     switch (status) {
       case 'C': {
         common.set(parseInt(code, 16), mapping.split(' ').map((value) => String.fromCharCode(parseInt(value, 16))).join(''));
