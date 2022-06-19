@@ -35,5 +35,8 @@ jobs:
     - name: Run base32 tests
       run: node ./base32.test.mjs
 
+    - name: Run casefold tests
+      run: node ./casefold.test.mjs
+
     - name: Run uwu tests
       run: node ./uwu.test.mjs
