@@ -2,6 +2,7 @@
 
 // https://www.unicode.org/Public/
 // https://www.unicode.org/Public/14.0.0/ucd/CaseFolding.txt
+// Note: Unicode 15.0.0 is still in DRAFT; will be released on September 2022.
 
 import { assert } from './assert.mjs';
 
