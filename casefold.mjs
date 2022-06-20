@@ -1690,3 +1690,11 @@ export const special_casefold = (value) => {
   }
   return casefolded;
 };
+
+/**
+ * @param {string} value
+ */
+export const full_casefold_normalize_nfkc = (value) => {
+  assert(typeof value === 'string');
+  return full_casefold(value).normalize('NFKC');
+};
