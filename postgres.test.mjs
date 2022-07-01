@@ -28,7 +28,6 @@ process.nextTick(async () => {
       { name: 'created', type: 'double precision', parameters: 'DEFAULT round(extract(epoch from current_timestamp) * 1000) NOT NULL' },
     ],
   };
-  await postgres.drop_table(sql, users_table);
   await postgres.create_table(sql, users_table);
 
   /**
