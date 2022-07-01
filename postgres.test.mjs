@@ -99,7 +99,7 @@ process.nextTick(async () => {
   }
 
   const select_information_schema_tables = await sql`
-    SELECT * FROM information_schema.tables table_schema = 'public';
+    SELECT * FROM information_schema.tables WHERE table_schema = 'public';
   `;
   console.log({ select_information_schema_tables });
 
