@@ -6,7 +6,6 @@
   "editor.tabSize": 2,
   "eslint.alwaysShowStatus": true,
   "eslint.format.enable": true,
-  "eslint.validate": ["javascript"],
   "explorer.compactFolders": false,
   "explorer.confirmDelete": false,
   "css.validate": false,
