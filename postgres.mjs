@@ -65,8 +65,7 @@ const encode_value = (value) => {
 export const drop_table = async (sql, table) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
-  const query = `DROP TABLE IF EXISTS "${table.name}" CASCADE;`;
-  await sql.unsafe(query);
+  await sql.unsafe(`DROP TABLE IF EXISTS "${table.name}" CASCADE;`);
 };
 
 /**
@@ -83,8 +82,7 @@ export const create_table = async (sql, table) => {
     assert(typeof column.parameters === 'string');
     return `"${column.name}" ${column.type} ${column.parameters}`;
   }).join(', ');
-  const query = `CREATE TABLE "${table.name}" (${columns});`;
-  await sql.unsafe(query);
+  await sql.unsafe(`CREATE TABLE "${table.name}" (${columns});`);
 };
 
 /**
