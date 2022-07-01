@@ -6,10 +6,10 @@ import * as postgres from './postgres.mjs';
 process.nextTick(async () => {
   const sql = postgres.connect('localhost', 5432, 'postgres', 'postgres', 'postgres');
 
-  const select_count_information_schema_tables = await sql`
-    SELECT COUNT(*) FROM information_schema.tables;
+  const select_version = await sql`
+    SELECT version();
   `;
-  console.log({ select_count_information_schema_tables });
+  console.log({ select_version });
 
   const users_table = {
     name: 'users',
@@ -98,7 +98,13 @@ process.nextTick(async () => {
     console.log('-- delete_item(table, id) OK');
   }
 
-  setTimeout(() => {
-    process.exit(0);
-  }, 3000);
+  const select_information_schema_tables = await sql`
+    SELECT * FROM information_schema.tables table_schema = 'public';
+  `;
+  console.log({ select_information_schema_tables });
+
+  await sql.end();
+
+  process.exit(0);
+
 });
