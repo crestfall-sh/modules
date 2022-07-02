@@ -103,14 +103,6 @@ const validate_item = (table, item, null_id) => {
         break;
       }
       case 'uuid': {
-        if (column.name === 'id') {
-          if (null_id === true) {
-            assert(item[column.name] === null);
-          } else {
-            assert(typeof item[column.name] === 'string');
-          }
-          break;
-        }
         assert(typeof item[column.name] === 'string');
         break;
       }
@@ -123,6 +115,18 @@ const validate_item = (table, item, null_id) => {
         Array.from(item[column.name]).forEach((value) => {
           assert(typeof value === 'string');
         });
+        break;
+      }
+      case 'serial': {
+        if (column.name === 'id') {
+          if (null_id === true) {
+            assert(item[column.name] === null);
+          } else {
+            assert(typeof item[column.name] === 'number');
+          }
+          break;
+        }
+        assert(typeof item[column.name] === 'number');
         break;
       }
       case 'double precision': {
@@ -195,7 +199,7 @@ export const read_item = async (sql, table, id) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
-  assert(typeof id === 'string');
+  assert(typeof id === 'number');
   const items = await sql.unsafe(`SELECT * FROM ${encode_name(table.name)} WHERE "id" = ${encode_value(id)} LIMIT 1;`);
   assert(items instanceof Array);
   const [item] = items;
@@ -230,7 +234,7 @@ export const delete_item = async (sql, table, id) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
-  assert(typeof id === 'string');
+  assert(typeof id === 'number');
   await sql.unsafe(`DELETE FROM ${encode_name(table.name)} WHERE "id" = ${encode_value(id)};`);
   return null;
 };

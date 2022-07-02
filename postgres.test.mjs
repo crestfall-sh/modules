@@ -14,7 +14,7 @@ process.nextTick(async () => {
   const users_table = {
     name: 'users',
     columns: [
-      { name: 'id', type: 'uuid', parameters: 'DEFAULT gen_random_uuid() PRIMARY KEY' },
+      { name: 'id', type: 'serial', parameters: 'PRIMARY KEY' },
       { name: 'name', type: 'text', parameters: 'NOT NULL' },
       { name: 'email', type: 'text', parameters: 'NOT NULL UNIQUE' },
       { name: 'email_code', type: 'text', parameters: 'NOT NULL' },
@@ -54,7 +54,8 @@ process.nextTick(async () => {
     };
     await postgres.create_items(sql, users_table, [user]);
     assert(user instanceof Object);
-    assert(typeof user.id === 'string');
+    assert(typeof user.id === 'number');
+    console.log({ user });
     user_id = user.id;
     console.log('-- create_items(table, items) OK');
   }

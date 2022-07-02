@@ -33,11 +33,11 @@ export const read_items: read_items;
 export type read_items_where = (sql: sql, table: table, name: string, operator: string, value: boolean|string|number, limit: number, offset: number) => Promise<item[]>;
 export const read_items_where: read_items_where;
 
-export type read_item = (sql: sql, table: table, id: string) => Promise<item>;
+export type read_item = (sql: sql, table: table, id: number) => Promise<item>;
 export const read_item: read_item;
 
 export type update_item = (sql: sql, table: table, item: item) => Promise<item>;
 export const update_item: update_item;
 
-export type delete_item = (sql: sql, table: table, id: string) => Promise<void>;
+export type delete_item = (sql: sql, table: table, id: number) => Promise<void>;
 export const update_item: update_item;
