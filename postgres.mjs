@@ -209,7 +209,7 @@ export const read_items = async (sql, table, limit, offset) => {
   assert(table.columns instanceof Array);
   assert(typeof limit === 'number');
   assert(typeof offset === 'number');
-  const items = await sql.unsafe(`SELECT * FROM ${encode_name(table.name)} LIMIT ${limit} OFFSET ${offset};`);
+  const items = await sql.unsafe(`SELECT * FROM ${encode_name(table.name)} LIMIT ${encode_value(limit)} OFFSET ${encode_value(offset)};`);
   return items;
 };
 
@@ -225,7 +225,7 @@ export const read_items_where = async (sql, table, name, operator, value, limit,
   assert(typeof value === 'boolean' || typeof value === 'string' || typeof value === 'number');
   assert(typeof limit === 'number');
   assert(typeof offset === 'number');
-  const items = await sql.unsafe(`SELECT * FROM ${encode_name(table.name)} WHERE ${encode_name(name)} ${operator} ${encode_value(value)} LIMIT ${limit} OFFSET ${offset};`);
+  const items = await sql.unsafe(`SELECT * FROM ${encode_name(table.name)} WHERE ${encode_name(name)} ${operator} ${encode_value(value)} LIMIT ${encode_value(limit)} OFFSET ${encode_value(offset)};`);
   return items;
 };
 

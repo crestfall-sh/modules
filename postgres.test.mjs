@@ -103,7 +103,7 @@ process.nextTick(async () => {
   {
     console.log('-- delete_item(table, id)');
     await postgres.delete_item(sql, users_table, user_id);
-    const users = await postgres.read_items_where(sql, users_table, 'name', '=', 'test', 100, 0);
+    const users = await postgres.read_items(sql, users_table, 100, 0);
     assert(users.length === 0);
     console.log('-- delete_item(table, id) OK');
   }
