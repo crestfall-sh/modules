@@ -5,7 +5,11 @@ export type sql = postgres.Sql<{ date: string }>;
 export interface column {
   name: string;
   type: string;
-  parameters: string;
+  primary?: boolean;
+  unique?: boolean;
+  nullable?: boolean;
+  default?: string;
+  references?: string;
 }
 
 export interface table {

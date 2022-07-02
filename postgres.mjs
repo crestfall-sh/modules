@@ -79,8 +79,30 @@ export const create_table = async (sql, table) => {
     assert(column instanceof Object);
     assert(typeof column.name === 'string');
     assert(typeof column.type === 'string');
-    assert(typeof column.parameters === 'string');
-    return `"${column.name}" ${column.type} ${column.parameters}`;
+    assert(typeof column.primary === 'boolean' || typeof column.primary === 'undefined');
+    assert(typeof column.unique === 'boolean' || typeof column.unique === 'undefined');
+    assert(typeof column.nullable === 'boolean' || typeof column.nullable === 'undefined');
+    assert(typeof column.default === 'string' || typeof column.default === 'undefined');
+    assert(typeof column.references === 'string' || typeof column.references === 'undefined');
+    const parameters = [encode_name(column.name), column.type];
+    if (typeof column.primary === 'boolean' && column.primary === true) {
+      parameters.push('PRIMARY KEY');
+    }
+    if (typeof column.unique === 'boolean' && column.unique === true) {
+      parameters.push('UNIQUE');
+    }
+    if (typeof column.nullable === 'boolean' && column.nullable === true) {
+      parameters.push('NULL');
+    } else {
+      parameters.push('NOT NULL');
+    }
+    if (typeof column.default === 'string') {
+      parameters.push(`DEFAULT ${column.default}`);
+    }
+    if (typeof column.references === 'string') {
+      parameters.push(`REFERENCES ${encode_name(column.references)}`);
+    }
+    return parameters.join(' ');
   }).join(', ');
   await sql.unsafe(`CREATE TABLE ${encode_name(table.name)} (${columns});`);
 };
@@ -97,44 +119,59 @@ const validate_item = (table, item, null_id) => {
     assert(column instanceof Object);
     assert(typeof column.name === 'string');
     assert(typeof column.type === 'string');
-    switch (column.type) {
-      case 'boolean': {
-        assert(typeof item[column.name] === 'boolean');
-        break;
+    let nulled = false;
+    if (column.nullable === true) {
+      if (item[column.name] === null) {
+        nulled = true;
       }
-      case 'uuid': {
-        assert(typeof item[column.name] === 'string');
-        break;
-      }
-      case 'text': {
-        assert(typeof item[column.name] === 'string');
-        break;
-      }
-      case 'text[]': {
-        assert(item[column.name] instanceof Array);
-        Array.from(item[column.name]).forEach((value) => {
-          assert(typeof value === 'string');
-        });
-        break;
-      }
-      case 'serial': {
-        if (column.name === 'id') {
-          if (null_id === true) {
-            assert(item[column.name] === null);
-          } else {
-            assert(typeof item[column.name] === 'number');
-          }
+    }
+    if (nulled === false) {
+      switch (column.type) {
+        case 'boolean': {
+          assert(typeof item[column.name] === 'boolean');
           break;
         }
-        assert(typeof item[column.name] === 'number');
-        break;
-      }
-      case 'double precision': {
-        assert(typeof item[column.name] === 'number');
-        break;
-      }
-      default: {
-        throw new Error(`Unhandled type: ${column.type}`);
+        case 'uuid': {
+          assert(typeof item[column.name] === 'string');
+          break;
+        }
+        case 'text': {
+          assert(typeof item[column.name] === 'string');
+          break;
+        }
+        case 'text[]': {
+          assert(item[column.name] instanceof Array);
+          Array.from(item[column.name]).forEach((value) => {
+            assert(typeof value === 'string');
+          });
+          break;
+        }
+        case 'smallserial':
+        case 'serial': {
+          if (column.name === 'id') {
+            if (null_id === true) {
+              assert(item[column.name] === null);
+            } else {
+              assert(typeof item[column.name] === 'number');
+            }
+            break;
+          }
+          assert(typeof item[column.name] === 'number');
+          break;
+        }
+        case 'smallint':
+        case 'integer': {
+          assert(typeof item[column.name] === 'number');
+          break;
+        }
+        case 'timestamp': {
+          assert(typeof item[column.name] === 'string');
+          assert(luxon.DateTime.fromISO(item[column.name]).isValid === true);
+          break;
+        }
+        default: {
+          throw new Error(`Unhandled type: ${column.type}`);
+        }
       }
     }
   });
@@ -266,7 +303,7 @@ export const connect = (host, port, username, password, database) => {
       date: {
         to: 1184,
         from: [1082, 1083, 1114, 1184],
-        serialize: (value) => value,
+        serialize: (value) => luxon.DateTime.fromISO(value).toSQL(),
         parse: (value) => luxon.DateTime.fromSQL(value).toISO(),
       },
     },

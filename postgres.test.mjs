@@ -1,5 +1,6 @@
 // @ts-check
 
+import * as luxon from 'luxon';
 import { assert } from './assert.mjs';
 import * as postgres from './postgres.mjs';
 
@@ -11,28 +12,31 @@ process.nextTick(async () => {
   `;
   console.log({ select_version });
 
+  /**
+   * @type {import('./postgres').table}
+   */
   const users_table = {
     name: 'users',
     columns: [
-      { name: 'id', type: 'serial', parameters: 'PRIMARY KEY' },
-      { name: 'name', type: 'text', parameters: 'NOT NULL' },
-      { name: 'email', type: 'text', parameters: 'NOT NULL UNIQUE' },
-      { name: 'email_code', type: 'text', parameters: 'NOT NULL' },
-      { name: 'email_verified', type: 'boolean', parameters: 'NOT NULL' },
-      { name: 'phone', type: 'text', parameters: 'NOT NULL' },
-      { name: 'phone_code', type: 'text', parameters: 'NOT NULL' },
-      { name: 'phone_verified', type: 'boolean', parameters: 'NOT NULL' },
-      { name: 'password_salt', type: 'text', parameters: 'NOT NULL' },
-      { name: 'password_key', type: 'text', parameters: 'NOT NULL' },
-      { name: 'recovery_code', type: 'text', parameters: 'NOT NULL' },
-      { name: 'created', type: 'double precision', parameters: 'DEFAULT round(extract(epoch from current_timestamp) * 1000) NOT NULL' },
+      { name: 'id', type: 'serial', primary: true },
+      { name: 'name', type: 'text' },
+      { name: 'email', type: 'text', unique: true },
+      { name: 'email_code', type: 'text' },
+      { name: 'email_verified', type: 'boolean' },
+      { name: 'phone', type: 'text' },
+      { name: 'phone_code', type: 'text' },
+      { name: 'phone_verified', type: 'boolean' },
+      { name: 'password_salt', type: 'text' },
+      { name: 'password_key', type: 'text' },
+      { name: 'recovery_code', type: 'text' },
+      { name: 'created', type: 'timestamp', default: 'NOW()', nullable: true },
     ],
   };
   await postgres.drop_table(sql, users_table);
   await postgres.create_table(sql, users_table);
 
   /**
-   * @type {string}
+   * @type {number}
    */
   let user_id = null;
 
@@ -50,7 +54,7 @@ process.nextTick(async () => {
       password_salt: 'test',
       password_key: 'test',
       recovery_code: 'test',
-      created: Date.now(),
+      created: null,
     };
     await postgres.create_items(sql, users_table, [user]);
     assert(user instanceof Object);
@@ -85,10 +89,14 @@ process.nextTick(async () => {
     console.log('-- update_item(table, item)');
     const user = await postgres.read_item(sql, users_table, user_id);
     assert(user instanceof Object);
-    const new_name = '"the quick brown \\"fox" \'';
-    user.name = new_name;
+    const name = '"the quick brown \\"fox" \'';
+    const created = luxon.DateTime.now().toISO();
+    user.name = name;
+    user.created = created;
     await postgres.update_item(sql, users_table, user);
-    assert(user.name === new_name);
+    assert(user.name === name);
+    assert(user.created === created);
+    console.log({ user });
     console.log('-- update_item(table, item) OK');
   }
 
