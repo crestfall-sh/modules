@@ -66,7 +66,7 @@ process.nextTick(async () => {
 
   {
     console.log('-- read_items_where(table, name, operator, value, limit, offset)');
-    const users = await users_table.read_items_where('name', '=', 'test', 100, 0);
+    const users = await users_table.read_items_where('name', 'test', 100, 0);
     assert(users.length === 1);
     console.log('-- read_items_where(table, name, operator, value, limit, offset) OK');
   }
@@ -80,7 +80,7 @@ process.nextTick(async () => {
 
   {
     console.log('-- read_item_where(table, name, operator, value, limit, offset)');
-    const user = await users_table.read_item_where('name', '=', 'test');
+    const user = await users_table.read_item_where('name', 'test');
     assert(user instanceof Object);
     console.log('-- read_item_where(table, name, operator, value, limit, offset) OK');
   }

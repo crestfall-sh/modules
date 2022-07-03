@@ -17,9 +17,9 @@ export interface methods<T> {
   create_table?: () => Promise<void>;
   create_items?: (items: T[]) => Promise<T[]>;
   read_items?: (limit: number, offset: number) => Promise<T[]>;
-  read_items_where?: (name: string, operator: string, value: boolean|string|number, limit: number, offset: number) => Promise<T[]>;
+  read_items_where?: (name: string, value: boolean|string|number, limit: number, offset: number) => Promise<T[]>;
   read_item?: (id: number) => Promise<T>;
-  read_item_where?: (name: string, operator: string, value: boolean|string|number) => Promise<T>;
+  read_item_where?: (name: string, value: boolean|string|number) => Promise<T>;
   update_item?: (item: T) => Promise<T>;
   delete_item?: (id: number) => Promise<void>;
 }
@@ -36,9 +36,9 @@ export type create_table<T> = (sql: sql, table: table<T>) => Promise<void>;
 export type validate_item<T> = (table: table<T>, item: item, null_id: boolean) => void;
 export type create_items<T> = (sql: sql, table: table<T>, items: item[]) => Promise<any[]>;
 export type read_items<T> = (sql: sql, table: table<T>, limit: number, offset: number) => Promise<any[]>;
-export type read_items_where<T> = (sql: sql, table: table<T>, name: string, operator: string, value: boolean|string|number, limit: number, offset: number) => Promise<any[]>;
+export type read_items_where<T> = (sql: sql, table: table<T>, name: string, value: boolean|string|number, limit: number, offset: number) => Promise<any[]>;
 export type read_item<T> = (sql: sql, table: table<T>, id: number) => Promise<any>;
-export type read_item_where<T> = (sql: sql, table: table<T>, name: string, operator: string, value: boolean|string|number) => Promise<any>;
+export type read_item_where<T> = (sql: sql, table: table<T>, name: string, value: boolean|string|number) => Promise<any>;
 export type update_item<T> = (sql: sql, table: table<T>, item: item) => Promise<any>;
 export type delete_item<T> = (sql: sql, table: table<T>, id: number) => Promise<void>;
 

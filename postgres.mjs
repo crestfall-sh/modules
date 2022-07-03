@@ -39,7 +39,7 @@ const encode_name = (value) => {
 
 // https://www.postgresql.org/docs/14/functions-comparison.html
 // not supported yet: IS NULL, IS NOT NULL, IS TRUE, IS FALSE
-const operators = new Set(['<', '>', '<=', '>=', '=', '<>', '!=']);
+// const operators = new Set(['<', '>', '<=', '>=', '=', '<>', '!=']);
 
 /**
  * @type {import('./postgres').drop_table<any>}
@@ -198,20 +198,17 @@ const read_items = async (sql, table, limit, offset) => {
 /**
  * @type {import('./postgres').read_items_where<any>}
  */
-const read_items_where = async (sql, table, name, operator, value, limit, offset) => {
+const read_items_where = async (sql, table, name, value, limit, offset) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
   assert(typeof name === 'string');
-  assert(typeof operator === 'string');
   assert(typeof value === 'boolean' || typeof value === 'string' || typeof value === 'number');
   assert(typeof limit === 'number');
   assert(typeof offset === 'number');
-  assert(operators.has(operator) === true);
   const existing = table.columns.find((column) => column.name === name);
   assert(existing instanceof Object);
-  const args = [value, limit, offset];
-  const items = await sql.unsafe(`SELECT * FROM ${encode_name(table.name)} WHERE ${encode_name(name)} ${operator} $1 LIMIT $2 OFFSET $3;`, args);
+  const items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} = ${value} LIMIT ${limit} OFFSET ${offset};`;
   return items;
 };
 
@@ -235,18 +232,15 @@ const read_item = async (sql, table, id) => {
 /**
  * @type {import('./postgres').read_item_where<any>}
  */
-const read_item_where = async (sql, table, name, operator, value) => {
+const read_item_where = async (sql, table, name, value) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
   assert(typeof name === 'string');
-  assert(typeof operator === 'string');
   assert(typeof value === 'boolean' || typeof value === 'string' || typeof value === 'number');
-  assert(operators.has(operator) === true);
   const existing = table.columns.find((column) => column.name === name);
   assert(existing instanceof Object);
-  const args = [value];
-  const items = await sql.unsafe(`SELECT * FROM ${encode_name(table.name)} WHERE ${encode_name(name)} ${operator} $1 LIMIT 1;`, args);
+  const items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} = ${value} LIMIT 1;`;
   assert(items instanceof Array);
   const [item] = items;
   if (item instanceof Object) {
@@ -297,9 +291,9 @@ export const assign_table_methods = (sql, table) => {
     create_table: () => create_table(sql, table),
     create_items: (items) => create_items(sql, table, items),
     read_items: (limit, offset) => read_items(sql, table, limit, offset),
-    read_items_where: (name, operator, value, limit, offset) => read_items_where(sql, table, name, operator, value, limit, offset),
+    read_items_where: (name, value, limit, offset) => read_items_where(sql, table, name, value, limit, offset),
     read_item: (id) => read_item(sql, table, id),
-    read_item_where: (name, operator, value) => read_item_where(sql, table, name, operator, value),
+    read_item_where: (name, value) => read_item_where(sql, table, name, value),
     update_item: (item) => update_item(sql, table, item),
     delete_item: (id) => delete_item(sql, table, id),
   };
@@ -339,4 +333,3 @@ export const connect = (host, port, username, password, database) => {
 
   return sql;
 };
-
