@@ -44,4 +44,4 @@ export type update_item = (sql: sql, table: table, item: item) => Promise<item>;
 export const update_item: update_item;
 
 export type delete_item = (sql: sql, table: table, id: number) => Promise<void>;
-export const update_item: update_item;
+export const delete_item: delete_item;
