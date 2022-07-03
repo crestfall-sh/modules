@@ -37,41 +37,23 @@ const encode_name = (value) => {
   return `"${escape(value)}"`;
 };
 
-/**
-  * @param {boolean|string|number} value
-  */
-const encode_value = (value) => {
-  assert(typeof value === 'boolean' || typeof value === 'string' || typeof value === 'number');
-  switch (typeof value) {
-    case 'boolean': {
-      return value;
-    }
-    case 'string': {
-      return `'${escape(value)}'`;
-    }
-    case 'number': {
-      return value;
-    }
-    default: {
-      break;
-    }
-  }
-  return null;
-};
+// https://www.postgresql.org/docs/14/functions-comparison.html
+// not supported yet: IS NULL, IS NOT NULL, IS TRUE, IS FALSE
+const operators = new Set(['<', '>', '<=', '>=', '=', '<>', '!=']);
 
 /**
- * @type {import('./postgres').drop_table}
+ * @type {import('./postgres').drop_table<any>}
  */
-export const drop_table = async (sql, table) => {
+const drop_table = async (sql, table) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   await sql`DROP TABLE IF EXISTS ${sql(table.name)} CASCADE;`;
 };
 
 /**
- * @type {import('./postgres').create_table}
+ * @type {import('./postgres').create_table<any>}
  */
-export const create_table = async (sql, table) => {
+const create_table = async (sql, table) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
@@ -108,7 +90,7 @@ export const create_table = async (sql, table) => {
 };
 
 /**
- * @type {import('./postgres').validate_item}
+ * @type {import('./postgres').validate_item<any>}
  */
 const validate_item = (table, item, null_id) => {
   assert(table instanceof Object);
@@ -178,9 +160,9 @@ const validate_item = (table, item, null_id) => {
 };
 
 /**
- * @type {import('./postgres').create_items}
+ * @type {import('./postgres').create_items<any>}
  */
-export const create_items = async (sql, table, items) => {
+const create_items = async (sql, table, items) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
@@ -201,9 +183,9 @@ export const create_items = async (sql, table, items) => {
 };
 
 /**
- * @type {import('./postgres').read_items}
+ * @type {import('./postgres').read_items<any>}
  */
-export const read_items = async (sql, table, limit, offset) => {
+const read_items = async (sql, table, limit, offset) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
@@ -214,9 +196,9 @@ export const read_items = async (sql, table, limit, offset) => {
 };
 
 /**
- * @type {import('./postgres').read_items_where}
+ * @type {import('./postgres').read_items_where<any>}
  */
-export const read_items_where = async (sql, table, name, operator, value, limit, offset) => {
+const read_items_where = async (sql, table, name, operator, value, limit, offset) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
@@ -225,14 +207,18 @@ export const read_items_where = async (sql, table, name, operator, value, limit,
   assert(typeof value === 'boolean' || typeof value === 'string' || typeof value === 'number');
   assert(typeof limit === 'number');
   assert(typeof offset === 'number');
-  const items = await sql.unsafe(`SELECT * FROM ${encode_name(table.name)} WHERE ${encode_name(name)} ${operator} ${encode_value(value)} LIMIT ${encode_value(limit)} OFFSET ${encode_value(offset)};`);
+  assert(operators.has(operator) === true);
+  const existing = table.columns.find((column) => column.name === name);
+  assert(existing instanceof Object);
+  const args = [value, limit, offset];
+  const items = await sql.unsafe(`SELECT * FROM ${encode_name(table.name)} WHERE ${encode_name(name)} ${operator} $1 LIMIT $2 OFFSET $3;`, args);
   return items;
 };
 
 /**
- * @type {import('./postgres').read_item}
+ * @type {import('./postgres').read_item<any>}
  */
-export const read_item = async (sql, table, id) => {
+const read_item = async (sql, table, id) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
@@ -247,16 +233,20 @@ export const read_item = async (sql, table, id) => {
 };
 
 /**
- * @type {import('./postgres').read_item_where}
+ * @type {import('./postgres').read_item_where<any>}
  */
-export const read_item_where = async (sql, table, name, operator, value) => {
+const read_item_where = async (sql, table, name, operator, value) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
   assert(typeof name === 'string');
   assert(typeof operator === 'string');
   assert(typeof value === 'boolean' || typeof value === 'string' || typeof value === 'number');
-  const items = await sql.unsafe(`SELECT * FROM ${encode_name(table.name)} WHERE ${encode_name(name)} ${operator} ${encode_value(value)} LIMIT 1;`);
+  assert(operators.has(operator) === true);
+  const existing = table.columns.find((column) => column.name === name);
+  assert(existing instanceof Object);
+  const args = [value];
+  const items = await sql.unsafe(`SELECT * FROM ${encode_name(table.name)} WHERE ${encode_name(name)} ${operator} $1 LIMIT 1;`, args);
   assert(items instanceof Array);
   const [item] = items;
   if (item instanceof Object) {
@@ -266,9 +256,9 @@ export const read_item_where = async (sql, table, name, operator, value) => {
 };
 
 /**
- * @type {import('./postgres').update_item}
+ * @type {import('./postgres').update_item<any>}
  */
-export const update_item = async (sql, table, item) => {
+const update_item = async (sql, table, item) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
@@ -284,9 +274,9 @@ export const update_item = async (sql, table, item) => {
 };
 
 /**
- * @type {import('./postgres').delete_item}
+ * @type {import('./postgres').delete_item<any>}
  */
-export const delete_item = async (sql, table, id) => {
+const delete_item = async (sql, table, id) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
@@ -296,7 +286,7 @@ export const delete_item = async (sql, table, id) => {
 };
 
 /**
- * @type {import('./postgres').assign_table_methods}
+ * @type {import('./postgres').assign_table_methods<any>}
  */
 export const assign_table_methods = (sql, table) => {
   /**
@@ -317,11 +307,7 @@ export const assign_table_methods = (sql, table) => {
 };
 
 /**
- * @param {string} host
- * @param {number} port
- * @param {string} username
- * @param {string} password
- * @param {string} database
+ * @type {import('./postgres').connect}
  */
 export const connect = (host, port, username, password, database) => {
 

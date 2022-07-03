@@ -31,35 +31,19 @@ export interface table<T> extends methods<T> {
 
 export type item = Record<string, any>;
 
-export type drop_table = (sql: sql, table: table) => Promise<void>;
-export const drop_table: drop_table;
+export type drop_table<T> = (sql: sql, table: table<T>) => Promise<void>;
+export type create_table<T> = (sql: sql, table: table<T>) => Promise<void>;
+export type validate_item<T> = (table: table<T>, item: item, null_id: boolean) => void;
+export type create_items<T> = (sql: sql, table: table<T>, items: item[]) => Promise<any[]>;
+export type read_items<T> = (sql: sql, table: table<T>, limit: number, offset: number) => Promise<any[]>;
+export type read_items_where<T> = (sql: sql, table: table<T>, name: string, operator: string, value: boolean|string|number, limit: number, offset: number) => Promise<any[]>;
+export type read_item<T> = (sql: sql, table: table<T>, id: number) => Promise<any>;
+export type read_item_where<T> = (sql: sql, table: table<T>, name: string, operator: string, value: boolean|string|number) => Promise<any>;
+export type update_item<T> = (sql: sql, table: table<T>, item: item) => Promise<any>;
+export type delete_item<T> = (sql: sql, table: table<T>, id: number) => Promise<void>;
 
-export type create_table = (sql: sql, table: table) => Promise<void>;
-export const create_table: create_table;
-
-export type validate_item = (table: table, item: item, null_id: boolean) => void;
-export const validate_item: validate_item;
-
-export type create_items = (sql: sql, table: table, items: item[]) => Promise<any[]>;
-export const create_items: create_items;
-
-export type read_items = (sql: sql, table: table, limit: number, offset: number) => Promise<any[]>;
-export const read_items: read_items;
-
-export type read_items_where = (sql: sql, table: table, name: string, operator: string, value: boolean|string|number, limit: number, offset: number) => Promise<any[]>;
-export const read_items_where: read_items_where;
-
-export type read_item = (sql: sql, table: table, id: number) => Promise<any>;
-export const read_item: read_item;
-
-export type read_item_where = (sql: sql, table: table, name: string, operator: string, value: boolean|string|number) => Promise<any>;
-export const read_item_where: read_item_where;
-
-export type update_item = (sql: sql, table: table, item: item) => Promise<any>;
-export const update_item: update_item;
-
-export type delete_item = (sql: sql, table: table, id: number) => Promise<void>;
-export const delete_item: delete_item;
-
-export type assign_table_methods = (sql: sql, table: table<any>) => void;
+export type assign_table_methods<T> = (sql: sql, table: table<T>) => void;
 export const assign_table_methods: assign_table_methods;
+
+export type connect = (host: string, port: number, username: string, password: string, database: string) => sql;
+export const connect: connect;
