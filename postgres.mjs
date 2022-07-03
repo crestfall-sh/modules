@@ -65,7 +65,7 @@ const encode_value = (value) => {
 export const drop_table = async (sql, table) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
-  await sql.unsafe(`DROP TABLE IF EXISTS ${encode_name(table.name)} CASCADE;`);
+  await sql`DROP TABLE IF EXISTS ${sql(table.name)} CASCADE;`;
 };
 
 /**
@@ -209,7 +209,7 @@ export const read_items = async (sql, table, limit, offset) => {
   assert(table.columns instanceof Array);
   assert(typeof limit === 'number');
   assert(typeof offset === 'number');
-  const items = await sql.unsafe(`SELECT * FROM ${encode_name(table.name)} LIMIT ${encode_value(limit)} OFFSET ${encode_value(offset)};`);
+  const items = await sql`SELECT * FROM ${sql(table.name)} LIMIT ${limit} OFFSET ${offset};`;
   return items;
 };
 
@@ -237,7 +237,7 @@ export const read_item = async (sql, table, id) => {
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
   assert(typeof id === 'number');
-  const items = await sql.unsafe(`SELECT * FROM ${encode_name(table.name)} WHERE "id" = ${encode_value(id)} LIMIT 1;`);
+  const items = await sql`SELECT * FROM ${sql(table.name)} WHERE "id" = ${id} LIMIT 1;`;
   assert(items instanceof Array);
   const [item] = items;
   if (item instanceof Object) {
@@ -291,7 +291,7 @@ export const delete_item = async (sql, table, id) => {
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
   assert(typeof id === 'number');
-  await sql.unsafe(`DELETE FROM ${encode_name(table.name)} WHERE "id" = ${encode_value(id)};`);
+  await sql`DELETE FROM ${sql(table.name)} WHERE "id" = ${id};`;
   return null;
 };
 
