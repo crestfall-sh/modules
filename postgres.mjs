@@ -247,6 +247,27 @@ export const read_item = async (sql, table, id) => {
 };
 
 /**
+ * @type {import('./postgres').read_item_where}
+ */
+export const read_item_where = async (sql, table, name, operator, value, limit, offset) => {
+  assert(table instanceof Object);
+  assert(typeof table.name === 'string');
+  assert(table.columns instanceof Array);
+  assert(typeof name === 'string');
+  assert(typeof operator === 'string');
+  assert(typeof value === 'boolean' || typeof value === 'string' || typeof value === 'number');
+  assert(typeof limit === 'number');
+  assert(typeof offset === 'number');
+  const items = await sql.unsafe(`SELECT * FROM ${encode_name(table.name)} WHERE ${encode_name(name)} ${operator} ${encode_value(value)} LIMIT ${encode_value(limit)} OFFSET ${encode_value(offset)};`);
+  assert(items instanceof Array);
+  const [item] = items;
+  if (item instanceof Object) {
+    return item;
+  }
+  return null;
+};
+
+/**
  * @type {import('./postgres').update_item}
  */
 export const update_item = async (sql, table, item) => {

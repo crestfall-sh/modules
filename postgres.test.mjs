@@ -86,6 +86,13 @@ process.nextTick(async () => {
   }
 
   {
+    console.log('-- read_item_where(table, name, operator, value, limit, offset)');
+    const user = await postgres.read_item_where(sql, users_table, 'email', '=', 'joshxyzhimself@gmail.com', 100, 0);
+    assert(user instanceof Object);
+    console.log('-- read_item_where(table, name, operator, value, limit, offset) OK');
+  }
+
+  {
     console.log('-- update_item(table, item)');
     const user = await postgres.read_item(sql, users_table, user_id);
     assert(user instanceof Object);
