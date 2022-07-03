@@ -296,6 +296,27 @@ export const delete_item = async (sql, table, id) => {
 };
 
 /**
+ * @type {import('./postgres').assign_table_methods}
+ */
+export const assign_table_methods = (sql, table) => {
+  /**
+   * @type {import('./postgres').methods<any>}
+   */
+  const methods = {
+    drop_table: () => drop_table(sql, table),
+    create_table: () => create_table(sql, table),
+    create_items: (items) => create_items(sql, table, items),
+    read_items: (limit, offset) => read_items(sql, table, limit, offset),
+    read_items_where: (name, operator, value, limit, offset) => read_items_where(sql, table, name, operator, value, limit, offset),
+    read_item: (id) => read_item(sql, table, id),
+    read_item_where: (name, operator, value) => read_item_where(sql, table, name, operator, value),
+    update_item: (item) => update_item(sql, table, item),
+    delete_item: (id) => delete_item(sql, table, id),
+  };
+  Object.assign(table, methods);
+};
+
+/**
  * @param {string} host
  * @param {number} port
  * @param {string} username

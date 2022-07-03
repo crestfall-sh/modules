@@ -12,7 +12,19 @@ export interface column {
   references?: string;
 }
 
-export interface table {
+export interface methods<T> {
+  drop_table?: () => Promise<void>;
+  create_table?: () => Promise<void>;
+  create_items?: (items: T[]) => Promise<T[]>;
+  read_items?: (limit: number, offset: number) => Promise<T[]>;
+  read_items_where?: (name: string, operator: string, value: boolean|string|number, limit: number, offset: number) => Promise<T[]>;
+  read_item?: (id: number) => Promise<T>;
+  read_item_where?: (name: string, operator: string, value: boolean|string|number) => Promise<T>;
+  update_item?: (item: T) => Promise<T>;
+  delete_item?: (id: number) => Promise<void>;
+}
+
+export interface table<T> extends methods<T> {
   name: string;
   columns: column[];
 }
@@ -48,3 +60,6 @@ export const update_item: update_item;
 
 export type delete_item = (sql: sql, table: table, id: number) => Promise<void>;
 export const delete_item: delete_item;
+
+export type assign_table_methods = (sql: sql, table: table<any>) => void;
+export const assign_table_methods: assign_table_methods;
