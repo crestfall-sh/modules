@@ -37,9 +37,6 @@ const encode_name = (value) => {
   return `"${escape(value)}"`;
 };
 
-// https://www.postgresql.org/docs/14/functions-comparison.html
-// not supported yet: IS NULL, IS NOT NULL, IS TRUE, IS FALSE
-// const operators = new Set(['<', '>', '<=', '>=', '=', '<>', '!=']);
 
 /**
  * @type {import('./postgres').drop_table<any>}
@@ -64,7 +61,6 @@ const create_table = async (sql, table) => {
     assert(typeof column.primary === 'boolean' || typeof column.primary === 'undefined');
     assert(typeof column.unique === 'boolean' || typeof column.unique === 'undefined');
     assert(typeof column.nullable === 'boolean' || typeof column.nullable === 'undefined');
-    assert(typeof column.default === 'string' || typeof column.default === 'undefined');
     assert(typeof column.references === 'string' || typeof column.references === 'undefined');
     const parameters = [encode_name(column.name), column.type];
     if (typeof column.primary === 'boolean' && column.primary === true) {
@@ -78,9 +74,6 @@ const create_table = async (sql, table) => {
     } else {
       parameters.push('NOT NULL');
     }
-    if (typeof column.default === 'string') {
-      parameters.push(`DEFAULT ${column.default}`);
-    }
     if (typeof column.references === 'string') {
       parameters.push(`REFERENCES ${encode_name(column.references)}`);
     }
@@ -92,7 +85,7 @@ const create_table = async (sql, table) => {
 /**
  * @type {import('./postgres').validate_item<any>}
  */
-const validate_item = (table, item, null_id) => {
+const validate_item = (table, item, creating) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
@@ -131,7 +124,7 @@ const validate_item = (table, item, null_id) => {
         case 'smallserial':
         case 'serial': {
           if (column.name === 'id') {
-            if (null_id === true) {
+            if (creating === true) {
               assert(item[column.name] === null);
             } else {
               assert(typeof item[column.name] === 'number');
@@ -170,7 +163,7 @@ const create_items = async (sql, table, items) => {
   items.forEach((item) => {
     validate_item(table, item, true);
   });
-  const column_names = table.columns.filter((column) => column.name !== 'id' && column.type !== 'uuid').map((column) => column.name);
+  const column_names = table.columns.filter((column) => column.type !== 'serial').map((column) => column.name);
   const created_items = await sql`INSERT INTO ${sql(table.name)} ${sql(items, ...column_names)} RETURNING *`;
   assert(created_items instanceof Array);
   assert(items.length === created_items.length);
@@ -198,17 +191,76 @@ const read_items = async (sql, table, limit, offset) => {
 /**
  * @type {import('./postgres').read_items_where<any>}
  */
-const read_items_where = async (sql, table, name, value, limit, offset) => {
+const read_items_where = async (sql, table, name, operator, value, limit, offset) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
   assert(typeof name === 'string');
-  assert(typeof value === 'boolean' || typeof value === 'string' || typeof value === 'number');
+  assert(typeof operator === 'string');
+  assert(typeof value === 'boolean' || typeof value === 'string' || typeof value === 'number' || value === null);
   assert(typeof limit === 'number');
   assert(typeof offset === 'number');
   const existing = table.columns.find((column) => column.name === name);
   assert(existing instanceof Object);
-  const items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} = ${value} LIMIT ${limit} OFFSET ${offset};`;
+  assert(table.operators.has(operator) === true);
+  if (value === null) {
+    assert(operator === 'IS' || operator === 'IS NOT');
+  }
+
+  /**
+   * @type {postgres.RowList<postgres.Row[]>}
+   */
+  let items = null;
+
+  switch (operator) {
+    case 'IS': {
+      assert(typeof value === 'boolean' || value === null);
+      switch (value) {
+        case true: {
+          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS TRUE')} LIMIT ${limit} OFFSET ${offset};`;
+          break;
+        }
+        case false: {
+          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS FALSE')} LIMIT ${limit} OFFSET ${offset};`;
+          break;
+        }
+        case null: {
+          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS NULL')} LIMIT ${limit} OFFSET ${offset};`;
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+      break;
+    }
+    case 'IS NOT': {
+      assert(typeof value === 'boolean' || value === null);
+      switch (value) {
+        case true: {
+          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS NOT TRUE')} LIMIT ${limit} OFFSET ${offset};`;
+          break;
+        }
+        case false: {
+          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS NOT FALSE')} LIMIT ${limit} OFFSET ${offset};`;
+          break;
+        }
+        case null: {
+          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS NOT NULL')} LIMIT ${limit} OFFSET ${offset};`;
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+      break;
+    }
+    default: {
+      items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get(operator)} ${value} LIMIT ${limit} OFFSET ${offset};`;
+      break;
+    }
+  }
+
   return items;
 };
 
@@ -232,15 +284,74 @@ const read_item = async (sql, table, id) => {
 /**
  * @type {import('./postgres').read_item_where<any>}
  */
-const read_item_where = async (sql, table, name, value) => {
+const read_item_where = async (sql, table, name, operator, value) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
   assert(typeof name === 'string');
-  assert(typeof value === 'boolean' || typeof value === 'string' || typeof value === 'number');
+  assert(typeof operator === 'string');
+  assert(typeof value === 'boolean' || typeof value === 'string' || typeof value === 'number' || value === null);
   const existing = table.columns.find((column) => column.name === name);
   assert(existing instanceof Object);
-  const items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} = ${value} LIMIT 1;`;
+  assert(table.operators.has(operator) === true);
+  if (value === null) {
+    assert(operator === 'IS' || operator === 'IS NOT');
+  }
+
+  /**
+   * @type {postgres.RowList<postgres.Row[]>}
+   */
+  let items = null;
+
+  switch (operator) {
+    case 'IS': {
+      assert(typeof value === 'boolean' || value === null);
+      switch (value) {
+        case true: {
+          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS TRUE')} LIMIT 1;`;
+          break;
+        }
+        case false: {
+          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS FALSE')} LIMIT 1;`;
+          break;
+        }
+        case null: {
+          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS NULL')} LIMIT 1;`;
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+      break;
+    }
+    case 'IS NOT': {
+      assert(typeof value === 'boolean' || value === null);
+      switch (value) {
+        case true: {
+          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS NOT TRUE')} LIMIT 1;`;
+          break;
+        }
+        case false: {
+          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS NOT FALSE')} LIMIT 1;`;
+          break;
+        }
+        case null: {
+          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS NOT NULL')} LIMIT 1;`;
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+      break;
+    }
+    default: {
+      items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get(operator)} ${value} LIMIT 1;`;
+      break;
+    }
+  }
+
   assert(items instanceof Array);
   const [item] = items;
   if (item instanceof Object) {
@@ -257,7 +368,7 @@ const update_item = async (sql, table, item) => {
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
   validate_item(table, item, false);
-  const column_names = table.columns.filter((column) => column.name !== 'id' && column.type !== 'uuid').map((column) => column.name);
+  const column_names = table.columns.filter((column) => column.type !== 'serial').map((column) => column.name);
   const updated_items = await sql`UPDATE ${sql(table.name)} SET ${sql(item, ...column_names)} WHERE "id" = ${item.id} RETURNING *`;
   assert(updated_items instanceof Array);
   assert(updated_items.length === 1);
@@ -283,6 +394,35 @@ const delete_item = async (sql, table, id) => {
  * @type {import('./postgres').assign_table_methods<any>}
  */
 export const assign_table_methods = (sql, table) => {
+
+  // https://www.postgresql.org/docs/14/functions-comparison.html
+  const operators = new Map([
+    ['<', sql`<`],
+    ['>', sql`>`],
+    ['<=', sql`<=`],
+    ['>=', sql`>=`],
+    ['=', sql`=`],
+    ['<>', sql`<>`],
+    ['!=', sql`!=`],
+    ['IS', sql`IS`],
+    ['IS TRUE', sql`IS TRUE`],
+    ['IS FALSE', sql`IS FALSE`],
+    ['IS NULL', sql`IS NULL`],
+    ['IS NOT', sql`IS NOT`],
+    ['IS NOT TRUE', sql`IS NOT TRUE`],
+    ['IS NOT FALSE', sql`IS NOT FALSE`],
+    ['IS NOT NULL', sql`IS NOT NULL`],
+  ]);
+
+  /**
+   * @type {import('./postgres').properties}
+   */
+  const properties = {
+    operators,
+    sql,
+  };
+  Object.assign(table, properties);
+
   /**
    * @type {import('./postgres').methods<any>}
    */
@@ -291,13 +431,15 @@ export const assign_table_methods = (sql, table) => {
     create_table: () => create_table(sql, table),
     create_items: (items) => create_items(sql, table, items),
     read_items: (limit, offset) => read_items(sql, table, limit, offset),
-    read_items_where: (name, value, limit, offset) => read_items_where(sql, table, name, value, limit, offset),
+    read_items_where: (name, operator, value, limit, offset) => read_items_where(sql, table, name, operator, value, limit, offset),
     read_item: (id) => read_item(sql, table, id),
-    read_item_where: (name, value) => read_item_where(sql, table, name, value),
+    read_item_where: (name, operator, value) => read_item_where(sql, table, name, operator, value),
     update_item: (item) => update_item(sql, table, item),
     delete_item: (id) => delete_item(sql, table, id),
   };
+
   Object.assign(table, methods);
+
 };
 
 /**
