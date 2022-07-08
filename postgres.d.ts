@@ -21,6 +21,7 @@ export interface methods<T> extends properties {
   create_table?: () => Promise<void>;
   insert?: (items: T[]) => Promise<T[]>;
   select?: (options?: options) => Promise<T[]>;
+  first?: (options?: options) => Promise<T>;
   update?: (item: T) => Promise<T>;
   remove?: (id: number) => Promise<void>;
 }
@@ -53,10 +54,11 @@ export interface options {
   offset?: number;
 }
 export type select<T> = (sql: sql, table: table<T>, options: options) => Promise<T[]>;
+export type first<T> = (sql: sql, table: table<T>, options: options) => Promise<T>;
 export type update<T> = (sql: sql, table: table<T>, item: item) => Promise<T>;
 export type remove<T> = (sql: sql, table: table<T>, id: number) => Promise<void>;
 
-export type assign_table_methods<T> = (sql: sql, table: table<T>) => void;
+export type assign_table_methods = (sql: sql, table: table<any>) => void;
 export const assign_table_methods: assign_table_methods;
 
 export type connect = (host: string, port: number, username: string, password: string, database: string) => sql;

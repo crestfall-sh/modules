@@ -223,6 +223,17 @@ const select = async (sql, table, options) => {
 };
 
 /**
+ * @type {import('./postgres').first<any>}
+ */
+const first = async (sql, table, options) => {
+  const [item] = await select(sql, table, { limit: 1, ...options });
+  if (item instanceof Object) {
+    return item;
+  }
+  return null;
+};
+
+/**
  * @type {import('./postgres').update<any>}
  */
 const update = async (sql, table, item) => {
@@ -253,7 +264,7 @@ const remove = async (sql, table, id) => {
 };
 
 /**
- * @type {import('./postgres').assign_table_methods<any>}
+ * @type {import('./postgres').assign_table_methods}
  */
 export const assign_table_methods = (sql, table) => {
 
@@ -293,6 +304,7 @@ export const assign_table_methods = (sql, table) => {
     create_table: () => create_table(sql, table),
     insert: (items) => insert(sql, table, items),
     select: (options) => select(sql, table, options),
+    first: (options) => first(sql, table, options),
     update: (item) => update(sql, table, item),
     remove: (id) => remove(sql, table, id),
   };

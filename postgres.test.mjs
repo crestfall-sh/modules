@@ -67,7 +67,7 @@ process.nextTick(async () => {
     console.log('-- select OK');
   }
   {
-    const [user] = await users_table.select({});
+    const user = await users_table.first({});
     assert(user instanceof Object);
     console.log('-- select OK');
   }
@@ -98,7 +98,7 @@ process.nextTick(async () => {
   }
 
   {
-    const [user] = await users_table.select({ where: 'id', eq: 1 });
+    const user = await users_table.first({ where: 'id', eq: 1 });
     assert(user instanceof Object);
     const email_code = crypto.randomBytes(32).toString('hex');
     user.email_code = email_code;
@@ -108,10 +108,9 @@ process.nextTick(async () => {
   }
 
   {
-    const user = await users_table.select({ where: 'email_code', is_not: null });
+    const user = await users_table.first({ where: 'email_code', is_not: null });
     assert(user instanceof Object);
-    console.log({ user });
-    console.log('-- select OK');
+    console.log('-- first OK');
   }
 
   {
@@ -119,6 +118,12 @@ process.nextTick(async () => {
     const users = await users_table.select({});
     assert(users.length === 0);
     console.log('-- remove OK');
+  }
+
+  {
+    const user = await users_table.first({});
+    assert(user === null);
+    console.log('-- first OK');
   }
 
   const select_information_schema_tables = await sql`
