@@ -219,6 +219,10 @@ const select = async (sql, table, options) => {
     ${ typeof options.limit === 'number' ? sql` LIMIT ${options.limit}` : sql`` }
     ${ typeof options.offset === 'number' ? sql` OFFSET ${options.offset}` : sql`` }
     ;`;
+  assert(items instanceof Array);
+  items.forEach((item) => {
+    validate_item(table, item, false);
+  });
   return items;
 };
 
@@ -226,8 +230,11 @@ const select = async (sql, table, options) => {
  * @type {import('./postgres').first<any>}
  */
 const first = async (sql, table, options) => {
-  const [item] = await select(sql, table, { limit: 1, ...options });
+  const items = await select(sql, table, { limit: 1, ...options });
+  assert(items instanceof Array);
+  const [item] = items;
   if (item instanceof Object) {
+    validate_item(table, item, false);
     return item;
   }
   return null;
