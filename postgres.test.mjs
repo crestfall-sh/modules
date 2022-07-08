@@ -53,84 +53,78 @@ process.nextTick(async () => {
       email_verified: false,
       created: luxon.DateTime.now().toISO(),
     };
-    await users_table.create_items([user]);
+    await users_table.insert([user]);
     assert(user instanceof Object);
     assert(typeof user.id === 'number');
     console.log({ user });
     user_id = user.id;
-    console.log('-- create_items OK');
+    console.log('-- insert OK');
   }
 
   {
-    const users = await users_table.read_items(100, 0);
+    const users = await users_table.select({});
     assert(users.length === 1);
-    console.log('-- read_items OK');
+    console.log('-- select OK');
   }
-
   {
-    const users = await users_table.read_items_where('email', '=', 'joshxyzhimself@gmail.com', 100, 0);
+    const [user] = await users_table.select({});
+    assert(user instanceof Object);
+    console.log('-- select OK');
+  }
+  {
+    const users = await users_table.select({ limit: 100, offset: 0 });
     assert(users.length === 1);
-    console.log('-- read_items_where OK');
+    console.log('-- select LIMIT OFFSET OK');
   }
-
   {
-    const users = await users_table.read_items_where('email_code', 'IS', null, 100, 0);
+    const users = await users_table.select({ descend: 'created' });
     assert(users.length === 1);
-    console.log('-- read_items_where OK');
+    console.log('-- select DESCEND OK');
+  }
+  {
+    const users = await users_table.select({ where: 'email', eq: 'joshxyzhimself@gmail.com' });
+    assert(users.length === 1);
+    console.log('-- select WHERE eq OK');
+  }
+  {
+    const users = await users_table.select({ where: 'email', neq: 'joshxyzhimself@gmail.com' });
+    assert(users.length === 0);
+    console.log('-- select WHERE neq OK');
+  }
+  {
+    const users = await users_table.select({ where: 'email_code', is: null });
+    assert(users.length === 1);
+    console.log('-- select WHERE neq OK');
   }
 
   {
-    const user = await users_table.read_item(user_id);
-    assert(user instanceof Object);
-    console.log('-- read_item OK');
-  }
-
-  {
-    const user = await users_table.read_item_where('email', '=', 'joshxyzhimself@gmail.com');
-    assert(user instanceof Object);
-    console.log('-- read_item_where OK');
-  }
-
-  {
-    const user = await users_table.read_item_where('email', '!=', 'joshxyzhimself@gmail.com');
-    assert(user === null);
-    console.log('-- read_item_where OK');
-  }
-
-  {
-    const user = await users_table.read_item_where('email_code', 'IS', null);
-    assert(user instanceof Object);
-    console.log('-- read_item_where OK');
-  }
-
-  {
-    const user = await users_table.read_item(user_id);
+    const [user] = await users_table.select({ where: 'id', eq: 1 });
     assert(user instanceof Object);
     const email_code = crypto.randomBytes(32).toString('hex');
     user.email_code = email_code;
-    await users_table.update_item(user);
+    await users_table.update(user);
     assert(user.email_code === email_code);
-    console.log('-- update_item OK');
+    console.log('-- update OK');
   }
 
   {
-    const user = await users_table.read_item_where('email_code', 'IS NOT', null);
+    const user = await users_table.select({ where: 'email_code', is_not: null });
     assert(user instanceof Object);
     console.log({ user });
-    console.log('-- read_item_where OK');
+    console.log('-- select OK');
   }
 
   {
-    await users_table.delete_item(user_id);
-    const users = await users_table.read_items(100, 0);
+    await users_table.remove(user_id);
+    const users = await users_table.select({});
     assert(users.length === 0);
-    console.log('-- delete_item OK');
+    console.log('-- remove OK');
   }
 
   const select_information_schema_tables = await sql`
     SELECT * FROM information_schema.tables WHERE table_schema = 'public';
   `;
-  console.log({ select_information_schema_tables });
+  assert(select_information_schema_tables instanceof Array);
 
   await sql.end();
 

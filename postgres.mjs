@@ -153,9 +153,9 @@ const validate_item = (table, item, creating) => {
 };
 
 /**
- * @type {import('./postgres').create_items<any>}
+ * @type {import('./postgres').insert<any>}
  */
-const create_items = async (sql, table, items) => {
+const insert = async (sql, table, items) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
@@ -176,194 +176,56 @@ const create_items = async (sql, table, items) => {
 };
 
 /**
- * @type {import('./postgres').read_items<any>}
+ * @type {import('./postgres').select<any>}
  */
-const read_items = async (sql, table, limit, offset) => {
+const select = async (sql, table, options) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
-  assert(table.columns instanceof Array);
-  assert(typeof limit === 'number');
-  assert(typeof offset === 'number');
-  const items = await sql`SELECT * FROM ${sql(table.name)} LIMIT ${limit} OFFSET ${offset};`;
+  assert(options instanceof Object);
+  if (typeof options.where === 'string') {
+    // left-hand operand, column, must exist.
+    const existing = table.columns.find((column) => column.name === options.where);
+    assert(existing instanceof Object);
+    // right-hand operand must only be one value, not zero, not more than one.
+    const operands = [options.eq, options.neq, options.gt, options.gte, options.lt, options.lte, options.is, options.is_not];
+    assert(operands.filter((value) => typeof value === 'boolean' || typeof value === 'string' || typeof value === 'number' || value === null).length === 1);
+  }
+  if (typeof options.ascend === 'string') {
+    // descend must not co-exist with ascend.
+    assert(typeof options.descend === 'undefined');
+  }
+  if (typeof options.descend === 'string') {
+    // ascend must not co-exist with descend.
+    assert(typeof options.ascend === 'undefined');
+  }
+  const items = await sql`
+    SELECT * FROM ${sql(table.name)}
+    ${ typeof options.where === 'string' ? sql` WHERE ${sql(options.where)} 
+      ${ typeof options.eq === 'boolean' || typeof options.eq === 'string' || typeof options.eq === 'number' ? sql` = ${options.eq}` : sql`` }
+      ${ typeof options.neq === 'boolean' || typeof options.neq === 'string' || typeof options.neq === 'number' ? sql` != ${options.neq}` : sql`` }
+      ${ typeof options.gt === 'number' ? sql` < ${options.gt}` : sql`` }
+      ${ typeof options.gte === 'number' ? sql` <= ${options.gte}` : sql`` }
+      ${ typeof options.lt === 'number' ? sql` > ${options.lt}` : sql`` }
+      ${ typeof options.lte === 'number' ? sql` >= ${options.lte}` : sql`` }
+      ${ options.is === true ? sql` IS TRUE ` : sql`` }
+      ${ options.is === false ? sql` IS FALSE ` : sql`` }
+      ${ options.is === null ? sql` IS NULL ` : sql`` }
+      ${ options.is_not === true ? sql` IS NOT TRUE ` : sql`` }
+      ${ options.is_not === false ? sql` IS NOT FALSE ` : sql`` }
+      ${ options.is_not === null ? sql` IS NOT NULL ` : sql`` }
+    ` : sql`` }
+    ${ typeof options.ascend === 'string' ? sql` ORDER BY ${sql(options.ascend)} ASC` : sql`` }
+    ${ typeof options.descend === 'string' ? sql` ORDER BY ${sql(options.descend)} DESC` : sql`` }
+    ${ typeof options.limit === 'number' ? sql` LIMIT ${options.limit}` : sql`` }
+    ${ typeof options.offset === 'number' ? sql` OFFSET ${options.offset}` : sql`` }
+    ;`;
   return items;
 };
 
 /**
- * @type {import('./postgres').read_items_where<any>}
+ * @type {import('./postgres').update<any>}
  */
-const read_items_where = async (sql, table, name, operator, value, limit, offset) => {
-  assert(table instanceof Object);
-  assert(typeof table.name === 'string');
-  assert(table.columns instanceof Array);
-  assert(typeof name === 'string');
-  assert(typeof operator === 'string');
-  assert(typeof value === 'boolean' || typeof value === 'string' || typeof value === 'number' || value === null);
-  assert(typeof limit === 'number');
-  assert(typeof offset === 'number');
-  const existing = table.columns.find((column) => column.name === name);
-  assert(existing instanceof Object);
-  assert(table.operators.has(operator) === true);
-  if (value === null) {
-    assert(operator === 'IS' || operator === 'IS NOT');
-  }
-
-  /**
-   * @type {postgres.RowList<postgres.Row[]>}
-   */
-  let items = null;
-
-  switch (operator) {
-    case 'IS': {
-      assert(typeof value === 'boolean' || value === null);
-      switch (value) {
-        case true: {
-          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS TRUE')} LIMIT ${limit} OFFSET ${offset};`;
-          break;
-        }
-        case false: {
-          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS FALSE')} LIMIT ${limit} OFFSET ${offset};`;
-          break;
-        }
-        case null: {
-          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS NULL')} LIMIT ${limit} OFFSET ${offset};`;
-          break;
-        }
-        default: {
-          break;
-        }
-      }
-      break;
-    }
-    case 'IS NOT': {
-      assert(typeof value === 'boolean' || value === null);
-      switch (value) {
-        case true: {
-          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS NOT TRUE')} LIMIT ${limit} OFFSET ${offset};`;
-          break;
-        }
-        case false: {
-          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS NOT FALSE')} LIMIT ${limit} OFFSET ${offset};`;
-          break;
-        }
-        case null: {
-          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS NOT NULL')} LIMIT ${limit} OFFSET ${offset};`;
-          break;
-        }
-        default: {
-          break;
-        }
-      }
-      break;
-    }
-    default: {
-      items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get(operator)} ${value} LIMIT ${limit} OFFSET ${offset};`;
-      break;
-    }
-  }
-
-  return items;
-};
-
-/**
- * @type {import('./postgres').read_item<any>}
- */
-const read_item = async (sql, table, id) => {
-  assert(table instanceof Object);
-  assert(typeof table.name === 'string');
-  assert(table.columns instanceof Array);
-  assert(typeof id === 'number');
-  const items = await sql`SELECT * FROM ${sql(table.name)} WHERE "id" = ${id} LIMIT 1;`;
-  assert(items instanceof Array);
-  const [item] = items;
-  if (item instanceof Object) {
-    return item;
-  }
-  return null;
-};
-
-/**
- * @type {import('./postgres').read_item_where<any>}
- */
-const read_item_where = async (sql, table, name, operator, value) => {
-  assert(table instanceof Object);
-  assert(typeof table.name === 'string');
-  assert(table.columns instanceof Array);
-  assert(typeof name === 'string');
-  assert(typeof operator === 'string');
-  assert(typeof value === 'boolean' || typeof value === 'string' || typeof value === 'number' || value === null);
-  const existing = table.columns.find((column) => column.name === name);
-  assert(existing instanceof Object);
-  assert(table.operators.has(operator) === true);
-  if (value === null) {
-    assert(operator === 'IS' || operator === 'IS NOT');
-  }
-
-  /**
-   * @type {postgres.RowList<postgres.Row[]>}
-   */
-  let items = null;
-
-  switch (operator) {
-    case 'IS': {
-      assert(typeof value === 'boolean' || value === null);
-      switch (value) {
-        case true: {
-          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS TRUE')} LIMIT 1;`;
-          break;
-        }
-        case false: {
-          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS FALSE')} LIMIT 1;`;
-          break;
-        }
-        case null: {
-          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS NULL')} LIMIT 1;`;
-          break;
-        }
-        default: {
-          break;
-        }
-      }
-      break;
-    }
-    case 'IS NOT': {
-      assert(typeof value === 'boolean' || value === null);
-      switch (value) {
-        case true: {
-          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS NOT TRUE')} LIMIT 1;`;
-          break;
-        }
-        case false: {
-          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS NOT FALSE')} LIMIT 1;`;
-          break;
-        }
-        case null: {
-          items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get('IS NOT NULL')} LIMIT 1;`;
-          break;
-        }
-        default: {
-          break;
-        }
-      }
-      break;
-    }
-    default: {
-      items = await sql`SELECT * FROM ${sql(table.name)} WHERE ${sql(name)} ${table.operators.get(operator)} ${value} LIMIT 1;`;
-      break;
-    }
-  }
-
-  assert(items instanceof Array);
-  const [item] = items;
-  if (item instanceof Object) {
-    return item;
-  }
-  return null;
-};
-
-/**
- * @type {import('./postgres').update_item<any>}
- */
-const update_item = async (sql, table, item) => {
+const update = async (sql, table, item) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
@@ -379,9 +241,9 @@ const update_item = async (sql, table, item) => {
 };
 
 /**
- * @type {import('./postgres').delete_item<any>}
+ * @type {import('./postgres').remove<any>}
  */
-const delete_item = async (sql, table, id) => {
+const remove = async (sql, table, id) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
@@ -429,13 +291,10 @@ export const assign_table_methods = (sql, table) => {
   const methods = {
     drop_table: () => drop_table(sql, table),
     create_table: () => create_table(sql, table),
-    create_items: (items) => create_items(sql, table, items),
-    read_items: (limit, offset) => read_items(sql, table, limit, offset),
-    read_items_where: (name, operator, value, limit, offset) => read_items_where(sql, table, name, operator, value, limit, offset),
-    read_item: (id) => read_item(sql, table, id),
-    read_item_where: (name, operator, value) => read_item_where(sql, table, name, operator, value),
-    update_item: (item) => update_item(sql, table, item),
-    delete_item: (id) => delete_item(sql, table, id),
+    insert: (items) => insert(sql, table, items),
+    select: (options) => select(sql, table, options),
+    update: (item) => update(sql, table, item),
+    remove: (id) => remove(sql, table, id),
   };
 
   Object.assign(table, methods);
