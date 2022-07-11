@@ -1,6 +1,6 @@
 {
   "name": "modules",
-  "version": "1.11.2",
+  "version": "1.12.0",
   "description": "",
   "author": "joshxyzhimself <joshxyzhimself@gmail.com>",
   "license": "MIT",
@@ -12,7 +12,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.100.0",
     "@grammyjs/types": "github:grammyjs/types#v2.7.1",
-    "luxon": "^2.4.0",
+    "luxon": "^3.0.1",
     "mime-types": "^2.1.35",
     "node-fetch": "^3.2.4",
     "postgres": "^3.2.4",

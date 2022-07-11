@@ -1,7 +1,7 @@
 // @ts-check
 
 import postgres from 'postgres';
-import luxon from 'luxon';
+import * as luxon from 'luxon';
 import { assert } from './assert.mjs';
 
 /**
