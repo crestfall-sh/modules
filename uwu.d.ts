@@ -17,7 +17,7 @@ export interface port_access_types {
 export const port_access_types: port_access_types;
 
 export type headers = Record<string, string>;
-export type json = Record<string, any>|any[];
+export type json = any;
 
 export interface response {
 
