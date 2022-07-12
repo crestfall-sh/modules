@@ -32,28 +32,35 @@ export const port_access_types = { SHARED: 0, EXCLUSIVE: 1 };
 /**
  * @type {Map<string, import('./uwu').cached_file>}
  */
-const cached_files = new Map();
+const file_cache = new Map();
 
 
 /**
- * @type {import('./uwu').internal_handler}
+ * @type {import('./uwu').apply_middlewares}
  */
-const internal_handler = async (res, handler, response, request) => {
+const apply_middlewares = async (res, middlewares, response, request) => {
   try {
     assert(res instanceof Object);
     assert(res.writeStatus instanceof Function);
     assert(res.writeHeader instanceof Function);
     assert(res.end instanceof Function);
-    assert(handler instanceof Function);
+    middlewares.forEach((middleware) => {
+      assert(middleware instanceof Function);
+    });
     assert(response instanceof Object);
     assert(request instanceof Object);
-    await handler(response, request);
+    for (let i = 0, l = middlewares.length; i < l; i += 1) {
+      const middleware = middlewares[i];
+      await middleware(response, request);
+      assert(typeof response.ended === 'boolean');
+      if (response.ended === true) {
+        break;
+      }
+    }
     assert(typeof response.aborted === 'boolean');
     if (response.aborted === true) {
       return;
     }
-    assert(typeof response.ended === 'boolean');
-    assert(response.ended === false);
     assert(typeof response.file_cache === 'boolean');
     assert(typeof response.file_cache_max_age_ms === 'number');
     assert(typeof response.status === 'number');
@@ -71,31 +78,24 @@ const internal_handler = async (res, handler, response, request) => {
       }
       if (response.status === 200) {
         if (response.file_cache === true) {
-          if (cached_files.has(response.file_path) === true) {
-            const cached_file = cached_files.get(response.file_path);
+          if (file_cache.has(response.file_path) === true) {
+            const cached_file = file_cache.get(response.file_path);
             if (Date.now() - cached_file.timestamp > response.file_cache_max_age_ms) {
-              cached_files.delete(response.file_path);
+              file_cache.delete(response.file_path);
             }
           }
-          if (cached_files.has(response.file_path) === false) {
+          if (file_cache.has(response.file_path) === false) {
             const file_name = path.basename(response.file_path);
             const file_content_type = mime_types.contentType(file_name) || null;
             const buffer = fs.readFileSync(response.file_path);
             const timestamp = Date.now();
-
             /**
              * @type {import('./uwu').cached_file}
              */
-            const cached_file = {
-              file_name,
-              file_content_type,
-              buffer,
-              timestamp,
-            };
-
-            cached_files.set(response.file_path, cached_file);
+            const cached_file = { file_name, file_content_type, buffer, timestamp };
+            file_cache.set(response.file_path, cached_file);
           }
-          const cached_file = cached_files.get(response.file_path);
+          const cached_file = file_cache.get(response.file_path);
           response.file_name = cached_file.file_name;
           response.file_content_type = cached_file.file_content_type;
           response.buffer = cached_file.buffer;
@@ -143,17 +143,11 @@ const internal_handler = async (res, handler, response, request) => {
     } else {
       res.end(response.buffer);
     }
-    response.ended = true;
-    response.end = Date.now();
-    response.took = response.end - response.start;
   } catch (e) {
     response.error = e;
     if (response.aborted === false) {
-      if (response.ended === false) {
-        res.writeStatus('500');
-        res.end();
-        response.ended = true;
-      }
+      res.writeStatus('500');
+      res.end();
     }
     console.error(e);
   }
@@ -161,15 +155,19 @@ const internal_handler = async (res, handler, response, request) => {
 
 
 /**
- * @type {import('./uwu').create_handler}
+ * @type {import('./uwu').use_middlewares}
  */
-export const create_handler = (handler) => {
-  assert(handler instanceof Function);
+export const use_middlewares = (...middlewares) => {
+
+  middlewares.forEach((middleware) => {
+    assert(middleware instanceof Function);
+  });
 
   /**
-   * @type {import('./uwu').initial_handler}
+   * @type {import('./uwu').uws_handler}
    */
-  const initial_handler = (res, req) => {
+  const uws_handler = (res, req) => {
+
     assert(res instanceof Object);
     assert(res.onData instanceof Function);
     assert(res.onAborted instanceof Function);
@@ -225,16 +223,10 @@ export const create_handler = (handler) => {
       json: null,
       buffer: null,
 
-      start: Date.now(),
-      end: null,
-      took: null,
     };
     request.body.buffer = Buffer.from([]);
     res.onData((chunk_arraybuffer, is_last) => {
-      // previous : const chunk_buffer = Buffer.from(chunk_arraybuffer.slice(0));
-      // current  : const chunk_buffer = Buffer.from(chunk_arraybuffer);
-      // https://github.com/uNetworking/uWebSockets.js/issues/602#issuecomment-903296476
-      const chunk_buffer = Buffer.from(chunk_arraybuffer);
+      const chunk_buffer = Buffer.from(chunk_arraybuffer.slice(0));
       request.body.buffer = Buffer.concat([request.body.buffer, chunk_buffer]);
       if (is_last === true) {
         try {
@@ -250,21 +242,21 @@ export const create_handler = (handler) => {
           request.error = e;
           console.error(e);
         }
-        process.nextTick(internal_handler, res, handler, response, request);
+        process.nextTick(apply_middlewares, res, middlewares, response, request);
       }
     });
     res.onAborted(() => {
       response.aborted = true;
     });
   };
-  return initial_handler;
+  return uws_handler;
 };
 
 
 /**
- * @type {import('./uwu').create_static_handler}
+ * @type {import('./uwu').use_static_middleware}
  */
-export const create_static_handler = (app, url_pathname, local_directory, static_response) => {
+export const use_static_middleware = (app, url_pathname, local_pathname, static_response) => {
   assert(app instanceof Object);
   assert(app.get instanceof Function);
 
@@ -272,15 +264,15 @@ export const create_static_handler = (app, url_pathname, local_directory, static
   assert(url_pathname.substring(0, 1) === '/');
   assert(url_pathname.substring(url_pathname.length - 1, url_pathname.length) === '/');
 
-  assert(typeof local_directory === 'string');
-  assert(local_directory.substring(local_directory.length - 1, local_directory.length) === path.sep);
-  assert(fs.existsSync(local_directory) === true);
-  assert(path.isAbsolute(local_directory) === true);
+  assert(typeof local_pathname === 'string');
+  assert(local_pathname.substring(local_pathname.length - 1, local_pathname.length) === path.sep);
+  assert(fs.existsSync(local_pathname) === true);
+  assert(path.isAbsolute(local_pathname) === true);
 
   assert(static_response === undefined || static_response instanceof Object);
 
-  const core_static_handler = create_handler(async (response, request) => {
-    response.file_path = request.url.replace(url_pathname, local_directory);
+  const core_static_middleware = use_middlewares(async (response, request) => {
+    response.file_path = request.url.replace(url_pathname, local_pathname);
     if (static_response instanceof Object) {
       Object.assign(response, static_response);
     }
@@ -295,7 +287,7 @@ export const create_static_handler = (app, url_pathname, local_directory, static
       req.setYield(true);
       return;
     }
-    core_static_handler(res, req);
+    core_static_middleware(res, req);
   });
 };
 

@@ -1,11 +1,16 @@
 // @ts-check
 
 import fs from 'fs';
+import url from 'url';
 import path from 'path';
 import { assert } from './assert.mjs';
 import { config } from './config.mjs';
-import { __dirname } from './constants.mjs';
 import * as s3 from './s3.mjs';
+
+const __filename = url.fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const __cwd = process.cwd();
+console.log({ __filename, __dirname, __cwd });
 
 assert(typeof config.s3_region === 'string');
 assert(typeof config.s3_hostname === 'string');

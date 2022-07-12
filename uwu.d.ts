@@ -16,39 +16,36 @@ export interface port_access_types {
 
 export const port_access_types: port_access_types;
 
-export interface response_headers {
-  [key:string]: string;
-}
+export type headers = Record<string, string>;
+export type json = Record<string, any>|any[];
 
 export interface response {
+
   aborted: boolean;
   ended: boolean;
   error: Error;
 
   status: number;
-  headers: response_headers;
+  headers: headers;
 
-  file_path?: string;
-  file_name?: string;
+  file_path: string;
+  file_name: string;
   file_content_type?: string;
   file_dispose: boolean;
   file_cache: boolean;
   file_cache_max_age_ms: number;
 
-  text?: string;
-  html?: string;
-  json?: any;
-  buffer?: Buffer;
+  text: string;
+  html: string;
+  json: json;
+  buffer: Buffer;
 
-  start?: number;
-  end?: number;
-  took?: number;
 }
 
 export interface static_response {
   file_cache?: boolean;
   file_cache_max_age_ms?: number;
-  headers?: response_headers;
+  headers?: headers;
 }
 
 export interface cached_file { 
@@ -73,7 +70,7 @@ export interface request_headers {
 
 export interface request_body {
   buffer: Buffer;
-  json: any;
+  json: json;
   parts: uws.MultipartField[];
 }
 
@@ -87,14 +84,15 @@ export interface request {
   error?: Error;
 }
 
-export type handler = (response: response, request: request) => void;
-export type internal_handler = (res: uws.HttpResponse, handler: handler, response: response, request: request) => void;
-export type initial_handler = (res: uws.HttpResponse, req: uws.HttpRequest) => void;
-export type create_handler = (handler: handler) => initial_handler;
-export const create_handler: create_handler;
+export type middleware = (response: response, request: request) => void;
+export type apply_middlewares = (res: uws.HttpResponse, middlewares: middleware[], response: response, request: request) => void;
+export type uws_handler = (res: uws.HttpResponse, req: uws.HttpRequest) => void;
 
-export type create_static_handler = (app: uws.TemplatedApp, url_pathname: string, local_directory: string, static_response: static_response) => void;
-export const create_static_handler: create_static_handler;
+export type use_middlewares = (...middlewares: middleware[]) => uws_handler;
+export const use_middlewares: use_middlewares;
+
+export type use_static_middleware = (app: uws.TemplatedApp, url_pathname: string, local_pathname: string, static_response: static_response) => void;
+export const use_static_middleware: use_static_middleware;
 
 export type serve_http = (app: uws.TemplatedApp, port_access_type: number, port: number) => Promise<uws.us_listen_socket>;
 export const serve_http: serve_http;

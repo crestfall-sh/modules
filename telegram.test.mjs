@@ -1,10 +1,16 @@
 // @ts-check
 
 import fs from 'fs';
+import url from 'url';
 import path from 'path';
 import { config } from './config.mjs';
-import { __dirname } from './constants.mjs';
 import * as telegram from './telegram.mjs';
+
+
+const __filename = url.fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const __cwd = process.cwd();
+console.log({ __filename, __dirname, __cwd });
 
 process.nextTick(async () => {
 
