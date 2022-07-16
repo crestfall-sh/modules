@@ -3,9 +3,10 @@
 // References:
 // - https://redis.io/docs/reference/protocol-spec/
 // - https://github.com/redis/redis-specifications/blob/master/protocol/RESP3.md
+// - https://github.com/joshxyzhimself/endpoint/blob/master/core/bytearray.js
 
 import net from 'net';
-import events from 'events';
+import { EventEmitter } from 'events';
 import { assert } from './assert.mjs';
 
 export const settings = {
@@ -13,46 +14,91 @@ export const settings = {
   password: null,
 };
 
-/**
- * @type {net.Socket}
- */
-let connection = null;
-
-const emitter = new events();
-
 const history = [];
 
-const execute = (command, ...parameters) => new Promise((resolve, reject) => {
+/**
+ * @param {any} value
+ */
+const encode = (value) => {
+  switch (typeof value) {
+    case 'string': {
+      return `$${value.length}\r\n${value}\r\n`; // bulk string, binary-safe
+    }
+    case 'number': {
+      if (Math.floor(value) === value) {
+        return `:${value}\r\n`; // number
+      }
+      return `,${value}\r\n`; // double
+    }
+    case 'boolean': {
+      if (value === true) {
+        return '#t\r\n';
+      }
+      return '#f\r\n';
+    }
+    case 'object': {
+      if (value instanceof Array) {
+        let encoded = `*${value.length}\r\n`;
+        const items = value;
+        items.forEach((item) => {
+          encoded += encode(item);
+        });
+        return encoded;
+      }
+      if (value instanceof Object) {
+        break;
+      }
+      if (value === null) {
+        return '_\r\n';
+      }
+      break;
+    }
+    default: {
+      break;
+    }
+  }
+  return null;
+};
+
+/**
+ * @param {net.Socket} connection
+ * @param {string} key
+ * @param {string} value
+ */
+export const set = (connection, key, value) => new Promise((resolve, reject) => {
+  connection.write(encode(['SET', key, value]));
+  history.push([resolve, reject, key, value]);
+});
+
+/**
+ * @param {net.Socket} connection
+ * @param {string} key
+ */
+export const get = (connection, key) => new Promise((resolve, reject) => {
+  connection.write(encode(['GET', key]));
+  history.push([resolve, reject, key]);
+});
+
+/**
+ * @param {net.Socket} connection
+ * @param {string} command
+ * @param  {string[]} parameters
+ */
+const execute = (connection, command, ...parameters) => new Promise((resolve, reject) => {
   connection.write(command);
   history.push([resolve, reject, command, ...parameters]);
 });
 
-const hello = async () => {
+/**
+ * @param {net.Socket} connection
+ */
+const hello = async (connection) => {
   let command = 'HELLO 3';
   if (typeof settings.username === 'string' && typeof settings.password === 'string') {
     command += ` AUTH ${settings.username} ${settings.password}`;
   }
   command += '\r\n';
-  await execute(command);
-};
-
-const get_char_code = (s) => s.charCodeAt(0);
-
-const asd = {
-  simpleString: get_char_code('+'),
-  simpleError: get_char_code('-'),
-  blobString: get_char_code('$'),
-  blobError: get_char_code('!'),
-  double: get_char_code(','),
-  number: get_char_code(':'),
-  null: get_char_code('_'),
-  boolean: get_char_code('#'),
-  true: get_char_code('t'),
-  false: get_char_code('f'),
-  array: get_char_code('*'),
-  push: get_char_code('>'),
-  map: get_char_code('%'),
-  mapkey: get_char_code('+'),
+  await execute(connection, command);
 };
 
 const char_codes = {
@@ -79,76 +125,98 @@ const decode = (buffer) => {
   }
 
   buffer[offset] += 1;
-  console.log(`decode: ${buffer[offset]}`);
-  console.log('next preview:');
-  console.log(buffer.subarray(buffer[offset]).toString());
-  const type_char_code = buffer[buffer[offset]];
+  // console.log(`decode: ${buffer[offset]}`);
+  // console.log('next preview:');
+  // console.log(buffer.subarray(buffer[offset]).toString());
 
-  console.log({ type_char_code });
+  const type_char_code = buffer[buffer[offset]];
+  // console.log({ type_char_code });
 
   switch (type_char_code) {
     case char_codes.bulk_string: {
-      console.log('type: bulk_string');
+      // console.log('type: bulk_string');
       const length_offset = buffer[offset] += 1;
       while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
         buffer[offset] += 1;
       }
       const length = Number(buffer.subarray(length_offset, buffer[offset]).toString());
-      console.log({ length });
+      // console.log({ length });
       buffer[offset] += 2;
       const value = buffer.subarray(buffer[offset], buffer[offset] += length).toString();
-      console.log({ value });
+      // console.log({ value });
+      buffer[offset] += 1;
+      return value;
+    }
+    case char_codes.simple_string: {
+      // console.log('type: simple_string');
+      const value_offset = buffer[offset] += 1;
+      while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
+        buffer[offset] += 1;
+      }
+      const value = buffer.subarray(value_offset, buffer[offset]).toString();
+      // console.log({ value });
+      buffer[offset] += 1;
+      return value;
+    }
+    case char_codes.simple_error: {
+      // console.log('type: simple_error');
+      const value_offset = buffer[offset] += 1;
+      while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
+        buffer[offset] += 1;
+      }
+      const value = new Error(buffer.subarray(value_offset, buffer[offset]).toString());
+      // console.log({ value });
       buffer[offset] += 1;
       return value;
     }
     case char_codes.integer: {
-      console.log('type: integer');
+      // console.log('type: integer');
       const value_offset = buffer[offset] += 1;
       while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
         buffer[offset] += 1;
       }
       const value = Number(buffer.subarray(value_offset, buffer[offset]).toString());
-      console.log({ value });
+      // console.log({ value });
       buffer[offset] += 1;
       return value;
     }
     case char_codes.map: {
-      console.log('type: map');
+      // console.log('type: map');
       const length_offset = buffer[offset] += 1;
       while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
         buffer[offset] += 1;
       }
       const length = Number(buffer.subarray(length_offset, buffer[offset]).toString());
-      console.log({ length });
+      // console.log({ length });
       buffer[offset] += 1;
       const value = {};
       for (let i = 0, l = length; i < l; i += 1) {
         const k = decode(buffer);
         const v = decode(buffer);
-        console.log({ i, k, v });
+        // console.log({ i, k, v });
         value[k] = v;
       }
       return value;
     }
     case char_codes.array: {
-      console.log('type: array');
+      // console.log('type: array');
       const length_offset = buffer[offset] += 1;
       while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
         buffer[offset] += 1;
       }
       const length = Number(buffer.subarray(length_offset, buffer[offset]).toString());
-      console.log({ length });
+      // console.log({ length });
       buffer[offset] += 1;
       const value = new Array(length);
       for (let i = 0, l = length; i < l; i += 1) {
         const v = decode(buffer);
-        console.log({ i, v });
+        // console.log({ i, v });
         value[i] = v;
       }
       return value;
     }
     default: {
-      console.log(`unhandled type ${type_char_code} ${String.fromCharCode(type_char_code)}`);
+      // console.log(`unhandled type ${type_char_code} ${String.fromCharCode(type_char_code)}`);
       return null;
     }
   }
@@ -159,33 +227,48 @@ const decode = (buffer) => {
  * @param {string} host
  * @param {number} port
  */
-const connect = (host, port) => {
+export const connect = (host, port) => {
 
-  connection = net.createConnection(port, host)
+  const events = new EventEmitter();
+
+  const connection = net.createConnection(port, host)
     .setNoDelay(true)
     .setKeepAlive(true)
     .on('connect', async () => {
-      emitter.emit('connect');
-      const response = await hello();
-      emitter.emit('ready', response);
+      events.emit('connected');
+      await hello(connection);
     })
     .on('data', (data) => {
-      console.log('> > > > data:');
-      console.log(data.toString());
+
       const response = decode(data);
-      console.log({ response });
+
+      if (response instanceof Object) {
+        if (response['server'] === 'redis' && response['proto'] === 3) {
+          events.emit('ready', response);
+        }
+      }
+
+      assert(history.length > 0);
+
+      const [resolve, reject] = history.shift();
+      if (response instanceof Error) {
+        reject(response);
+      } else {
+        resolve(response);
+      }
+
     })
-    .on('close', (...parameters) => {
-      console.log('UNHANDLED EVENT CLOSE', parameters);
+    .on('close', (had_error) => {
+      events.emit('close', had_error);
     })
     .on('error', (error) => {
-      console.log('UNHANDLED EVENT ERROR', error);
+      events.emit('error', error);
     })
-    .on('end', (...parameters) => {
-      console.log('UNHANDLED EVENT END', parameters);
+    .on('end', () => {
+      events.emit('end');
     });
-};
 
-process.nextTick(async () => {
-  connect('localhost', 6379);
-});
+  const client = { connection, events };
+
+  return client;
+};
