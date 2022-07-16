@@ -1,5 +1,9 @@
 // @ts-check
 
+// References:
+// - https://redis.io/docs/reference/protocol-spec/
+// - https://github.com/redis/redis-specifications/blob/master/protocol/RESP3.md
+
 import net from 'net';
 import events from 'events';
 import { assert } from './assert.mjs';
