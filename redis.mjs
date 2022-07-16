@@ -9,11 +9,6 @@ import net from 'net';
 import { EventEmitter } from 'events';
 import { assert } from './assert.mjs';
 
-export const settings = {
-  username: null,
-  password: null,
-};
-
 const history = [];
 
 /**
@@ -64,9 +59,10 @@ const encode = (value) => {
  * @param {net.Socket} connection
  * @param {string} key
  * @param {string} value
+ * @param {(string)[]} parameters
  */
-export const set = (connection, key, value) => new Promise((resolve, reject) => {
-  connection.write(encode(['SET', key, value]));
+export const set = (connection, key, value, ...parameters) => new Promise((resolve, reject) => {
+  connection.write(encode(['SET', key, value, ...parameters]));
   history.push([resolve, reject, key, value]);
 });
 
@@ -81,25 +77,11 @@ export const get = (connection, key) => new Promise((resolve, reject) => {
 
 /**
  * @param {net.Socket} connection
- * @param {string} command
- * @param  {string[]} parameters
  */
-const execute = (connection, command, ...parameters) => new Promise((resolve, reject) => {
-  connection.write(command);
-  history.push([resolve, reject, command, ...parameters]);
+const hello = (connection) => new Promise((resolve, reject) => {
+  connection.write('HELLO 3\r\n');
+  history.push([resolve, reject]);
 });
-
-/**
- * @param {net.Socket} connection
- */
-const hello = async (connection) => {
-  let command = 'HELLO 3';
-  if (typeof settings.username === 'string' && typeof settings.password === 'string') {
-    command += ` AUTH ${settings.username} ${settings.password}`;
-  }
-  command += '\r\n';
-  await execute(connection, command);
-};
 
 const char_codes = {
   cr: '\r'.charCodeAt(0),
@@ -111,6 +93,7 @@ const char_codes = {
   array: '*'.charCodeAt(0),
   map: '%'.charCodeAt(0),
   map_key: '+'.charCodeAt(0),
+  null: '_'.charCodeAt(0),
 };
 
 const offset = Symbol('offset');
@@ -215,8 +198,12 @@ const decode = (buffer) => {
       }
       return value;
     }
+    case char_codes.null: {
+      buffer[offset] += 2;
+      return null;
+    }
     default: {
-      // console.log(`unhandled type ${type_char_code} ${String.fromCharCode(type_char_code)}`);
+      console.log(`unhandled type ${type_char_code} ${String.fromCharCode(type_char_code)}`);
       return null;
     }
   }
