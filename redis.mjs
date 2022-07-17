@@ -8,11 +8,14 @@
 // - https://redis.io/commands/client-tracking/
 // - https://github.com/joshxyzhimself/endpoint/blob/master/core/bytearray.js
 
+/**
+ * @typedef {import('./redis').client} client
+ * @typedef {import('./redis').record} record
+ */
+
 import net from 'net';
 import { EventEmitter } from 'events';
 import { assert } from './assert.mjs';
-
-const history = [];
 
 /**
  * @param {string|any[]} value
@@ -32,26 +35,26 @@ const encode = (value) => {
 };
 
 /**
- * @param {net.Socket} connection
+ * @param {client} client
  * @param {string} command
  * @param  {string[]} parameters
  * @returns {Promise<any>}
  */
-export const exec = (connection, command, ...parameters) => new Promise((resolve, reject) => {
+export const exec = (client, command, ...parameters) => new Promise((resolve, reject) => {
   assert(typeof command === 'string');
   parameters.forEach((parameter) => {
     assert(typeof parameter === 'string');
   });
-  connection.write(encode([command, ...parameters]));
-  history.push([resolve, reject, command, parameters]);
+  client.connection.write(encode([command, ...parameters]));
+  client.records.push({ resolve, reject, command, parameters });
 });
 
 /**
- * @param {net.Socket} connection
+ * @param {client} client
  */
-const hello = (connection) => new Promise((resolve, reject) => {
-  connection.write('HELLO 3\r\n');
-  history.push([resolve, reject]);
+const hello = (client) => new Promise((resolve, reject) => {
+  client.connection.write('HELLO 3\r\n');
+  client.records.push({ resolve, reject });
 });
 
 const char_codes = {
@@ -210,13 +213,23 @@ const decode = (buffer) => {
  */
 export const connect = (host, port) => {
 
+  const connection = net.createConnection(port, host);
   const events = new EventEmitter();
 
-  const connection = net.createConnection(port, host)
-    .setNoDelay(true)
+  /**
+   * @type {record[]}
+   */
+  const records = [];
+
+  /**
+   * @type {import('./redis').client}
+   */
+  const client = { connection, events, records };
+
+  connection.setNoDelay(true)
     .setKeepAlive(true)
     .on('connect', async () => {
-      await hello(connection);
+      await hello(client);
     })
     .on('data', (data) => {
 
@@ -230,17 +243,29 @@ export const connect = (host, port) => {
 
       if (response instanceof Array) {
         if (response[push] === true) {
-          const [event, event_channel, event_data] = response;
-          if (event === 'message') {
-            events.emit(event, event_channel, event_data);
-            return;
+          const event = response[0];
+          switch (event) {
+            case 'message': {
+              const event_channel = response[1];
+              const event_data = response[2];
+              events.emit(event, event_channel, event_data);
+              return;
+            }
+            case 'invalidate': {
+              const event_key = response[1];
+              events.emit(event, event_key);
+              return;
+            }
+            default: {
+              break;
+            }
           }
         }
       }
 
-      assert(history.length > 0);
+      assert(records.length > 0);
 
-      const [resolve, reject] = history.shift();
+      const { resolve, reject } = records.shift();
       if (response instanceof Error) {
         reject(response);
       } else {
@@ -257,8 +282,6 @@ export const connect = (host, port) => {
     .on('end', () => {
       events.emit('end');
     });
-
-  const client = { connection, events };
 
   return client;
 };
