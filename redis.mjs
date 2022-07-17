@@ -190,7 +190,6 @@ export const connect = (host, port) => {
     .setNoDelay(true)
     .setKeepAlive(true)
     .on('connect', async () => {
-      events.emit('connected');
       await hello(connection);
     })
     .on('data', (data) => {

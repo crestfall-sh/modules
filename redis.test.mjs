@@ -1,11 +1,7 @@
 // @ts-check
 
-import util from 'util';
-import child_process from 'child_process';
 import * as redis from './redis.mjs';
 import { assert } from './assert.mjs';
-
-const child_process_exec = util.promisify(child_process.exec);
 
 process.nextTick(async () => {
 
@@ -99,7 +95,17 @@ process.nextTick(async () => {
       });
     }
 
-    await child_process_exec('redis-cli publish test-channel "test"');
+    {
+      const client2 = redis.connect('localhost', 6379);
+      assert(client2 instanceof Object);
+
+      client2.events.on('ready', async () => {
+        const publish_response = await redis.exec(client2.connection, 'PUBLISH', 'test-channel', 'test');
+        console.log({ publish_response });
+        assert(publish_response === 1);
+        client2.connection.end();
+      });
+    }
 
   });
 
