@@ -106,7 +106,7 @@ process.nextTick(async () => {
         client2.connection.end();
       });
 
-      await new Promise((resolve) => client2.connection.on('end', resolve));
+      await new Promise((resolve) => client2.connection.once('end', resolve));
     }
 
 

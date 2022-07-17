@@ -12,4 +12,5 @@ export interface client {
   connection: net.Socket;
   events: EventEmitter;
   records: record[];
+  ready: boolean;
 }

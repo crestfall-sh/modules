@@ -234,7 +234,7 @@ export const connect = (host, port) => {
   /**
    * @type {import('./redis').client}
    */
-  const client = { connection, events, records };
+  const client = { connection, events, records, ready: false };
 
   connection.setNoDelay(true)
     .setKeepAlive(true)
@@ -247,6 +247,7 @@ export const connect = (host, port) => {
 
       if (response instanceof Object) {
         if (response['server'] === 'redis' && response['proto'] === 3) {
+          client.ready = true;
           events.emit('ready', response);
         }
       }
