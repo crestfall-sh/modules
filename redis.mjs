@@ -33,22 +33,17 @@ const encode = (value) => {
 
 /**
  * @param {net.Socket} connection
- * @param {string} key
- * @param {string} value
- * @param {(string)[]} parameters
+ * @param {string} command
+ * @param  {string[]} parameters
+ * @returns {Promise<any>}
  */
-export const set = (connection, key, value, ...parameters) => new Promise((resolve, reject) => {
-  connection.write(encode(['SET', key, value, ...parameters]));
-  history.push([resolve, reject, key, value]);
-});
-
-/**
- * @param {net.Socket} connection
- * @param {string} key
- */
-export const get = (connection, key) => new Promise((resolve, reject) => {
-  connection.write(encode(['GET', key]));
-  history.push([resolve, reject, key]);
+export const exec = (connection, command, ...parameters) => new Promise((resolve, reject) => {
+  assert(typeof command === 'string');
+  parameters.forEach((parameter) => {
+    assert(typeof parameter === 'string');
+  });
+  connection.write(encode([command, ...parameters]));
+  history.push([resolve, reject, command, parameters]);
 });
 
 /**
@@ -84,92 +79,73 @@ const decode = (buffer) => {
   }
 
   buffer[offset] += 1;
-  // console.log(`decode: ${buffer[offset]}`);
-  // console.log('next preview:');
-  // console.log(buffer.subarray(buffer[offset]).toString());
 
   const type_char_code = buffer[buffer[offset]];
-  // console.log({ type_char_code });
 
   switch (type_char_code) {
     case char_codes.bulk_string: {
-      // console.log('type: bulk_string');
       const length_offset = buffer[offset] += 1;
       while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
         buffer[offset] += 1;
       }
       const length = Number(buffer.subarray(length_offset, buffer[offset]).toString());
-      // console.log({ length });
       buffer[offset] += 2;
       const value = buffer.subarray(buffer[offset], buffer[offset] += length).toString();
-      // console.log({ value });
       buffer[offset] += 1;
       return value;
     }
     case char_codes.simple_string: {
-      // console.log('type: simple_string');
       const value_offset = buffer[offset] += 1;
       while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
         buffer[offset] += 1;
       }
       const value = buffer.subarray(value_offset, buffer[offset]).toString();
-      // console.log({ value });
       buffer[offset] += 1;
       return value;
     }
     case char_codes.simple_error: {
-      // console.log('type: simple_error');
       const value_offset = buffer[offset] += 1;
       while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
         buffer[offset] += 1;
       }
       const value = new Error(buffer.subarray(value_offset, buffer[offset]).toString());
-      // console.log({ value });
       buffer[offset] += 1;
       return value;
     }
     case char_codes.integer: {
-      // console.log('type: integer');
       const value_offset = buffer[offset] += 1;
       while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
         buffer[offset] += 1;
       }
       const value = Number(buffer.subarray(value_offset, buffer[offset]).toString());
-      // console.log({ value });
       buffer[offset] += 1;
       return value;
     }
     case char_codes.map: {
-      // console.log('type: map');
       const length_offset = buffer[offset] += 1;
       while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
         buffer[offset] += 1;
       }
       const length = Number(buffer.subarray(length_offset, buffer[offset]).toString());
-      // console.log({ length });
       buffer[offset] += 1;
       const value = {};
       for (let i = 0, l = length; i < l; i += 1) {
         const k = decode(buffer);
         const v = decode(buffer);
-        // console.log({ i, k, v });
         value[k] = v;
       }
       return value;
     }
     case char_codes.array: {
-      // console.log('type: array');
       const length_offset = buffer[offset] += 1;
       while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
         buffer[offset] += 1;
       }
       const length = Number(buffer.subarray(length_offset, buffer[offset]).toString());
-      // console.log({ length });
       buffer[offset] += 1;
       const value = new Array(length);
       for (let i = 0, l = length; i < l; i += 1) {
         const v = decode(buffer);
-        // console.log({ i, v });
         value[i] = v;
       }
       return value;
