@@ -1,7 +1,11 @@
 // @ts-check
 
+import util from 'util';
+import child_process from 'child_process';
 import * as redis from './redis.mjs';
 import { assert } from './assert.mjs';
+
+const child_process_exec = util.promisify(child_process.exec);
 
 process.nextTick(async () => {
 
@@ -58,12 +62,44 @@ process.nextTick(async () => {
     }
 
     {
-      const get_response = await redis.exec(client.connection, 'EXISTS', 'non-existent');
-      console.log({ get_response });
-      assert(get_response === 0);
+      const exists_response = await redis.exec(client.connection, 'EXISTS', 'non-existent');
+      console.log({ exists_response });
+      assert(exists_response === 0);
     }
 
-    client.connection.end();
+    {
+      const subscribe_response = await redis.exec(client.connection, 'SUBSCRIBE', 'test-channel');
+      console.log({ subscribe_response });
+    }
+
+    {
+      const unsubscribe_response = await redis.exec(client.connection, 'UNSUBSCRIBE', 'test-channel');
+      console.log({ unsubscribe_response });
+    }
+
+    {
+      const publish_response = await redis.exec(client.connection, 'PUBLISH', 'test-channel', 'test');
+      assert(publish_response === 0);
+      console.log({ publish_response });
+    }
+
+    {
+      const subscribe_response = await redis.exec(client.connection, 'SUBSCRIBE', 'test-channel');
+      console.log({ subscribe_response });
+
+      client.events.on('message', async (channel, data) => {
+
+        console.log({ channel, data });
+
+        const unsubscribe_response = await redis.exec(client.connection, 'UNSUBSCRIBE', 'test-channel');
+        console.log({ unsubscribe_response });
+
+        client.connection.end();
+
+      });
+    }
+
+    await child_process_exec('redis-cli publish test-channel "test"');
 
   });
 

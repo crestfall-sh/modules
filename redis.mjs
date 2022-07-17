@@ -65,9 +65,11 @@ const char_codes = {
   map: '%'.charCodeAt(0),
   map_key: '+'.charCodeAt(0),
   null: '_'.charCodeAt(0),
+  push: '>'.charCodeAt(0),
 };
 
 const offset = Symbol('offset');
+const push = Symbol('offset');
 
 /**
  * @param {Buffer} buffer
@@ -154,9 +156,23 @@ const decode = (buffer) => {
       buffer[offset] += 2;
       return null;
     }
+    case char_codes.push: {
+      const length_offset = buffer[offset] += 1;
+      while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
+        buffer[offset] += 1;
+      }
+      const length = Number(buffer.subarray(length_offset, buffer[offset]).toString());
+      buffer[offset] += 1;
+      const value = new Array(length);
+      for (let i = 0, l = length; i < l; i += 1) {
+        const v = decode(buffer);
+        value[i] = v;
+      }
+      value[push] = true;
+      return value;
+    }
     default: {
-      console.log(`unhandled type ${type_char_code} ${String.fromCharCode(type_char_code)}`);
-      return null;
+      throw new Error(`Unhandled type; code ${type_char_code}; char ${String.fromCharCode(type_char_code)}.`);
     }
   }
 
@@ -184,6 +200,16 @@ export const connect = (host, port) => {
       if (response instanceof Object) {
         if (response['server'] === 'redis' && response['proto'] === 3) {
           events.emit('ready', response);
+        }
+      }
+
+      if (response instanceof Array) {
+        if (response[push] === true) {
+          const [event, event_channel, event_data] = response;
+          if (event === 'message') {
+            events.emit(event, event_channel, event_data);
+            return;
+          }
         }
       }
 
