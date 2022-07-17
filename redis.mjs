@@ -1,8 +1,11 @@
 // @ts-check
 
 // References:
-// - https://redis.io/docs/reference/protocol-spec/
 // - https://github.com/redis/redis-specifications/blob/master/protocol/RESP3.md
+// - https://redis.io/docs/reference/protocol-spec/
+// - https://redis.io/docs/manual/pubsub/
+// - https://redis.io/docs/manual/client-side-caching/
+// - https://redis.io/commands/client-tracking/
 // - https://github.com/joshxyzhimself/endpoint/blob/master/core/bytearray.js
 
 import net from 'net';
