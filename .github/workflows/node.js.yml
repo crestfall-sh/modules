@@ -30,7 +30,20 @@ jobs:
           POSTGRES_PASSWORD: postgres
         ports:
           - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:latest
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
     - uses: actions/checkout@v2
     - name: Use Node.js ${{ matrix.node-version }}
@@ -44,6 +57,9 @@ jobs:
 
     - name: Run postgres test
       run: node ./postgres.test.mjs
+
+    - name: Run redis test
+      run: node ./redis.test.mjs
 
     - name: Run base32 tests
       run: node ./base32.test.mjs
