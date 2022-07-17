@@ -60,11 +60,12 @@ const hello = (client) => new Promise((resolve, reject) => {
 const char_codes = {
   cr: '\r'.charCodeAt(0),
   lf: '\n'.charCodeAt(0),
-  simple_string: '+'.charCodeAt(0),
-  simple_error: '-'.charCodeAt(0),
+  binary_unsafe_string: '+'.charCodeAt(0),
+  binary_unsafe_error: '-'.charCodeAt(0),
   binary_safe_string: '$'.charCodeAt(0),
   binary_safe_error: '!'.charCodeAt(0),
   integer: ':'.charCodeAt(0),
+  double: ','.charCodeAt(0),
   array: '*'.charCodeAt(0),
   map: '%'.charCodeAt(0),
   set: '~'.charCodeAt(0),
@@ -111,7 +112,7 @@ const decode = (buffer) => {
       buffer[offset] += 1;
       return value;
     }
-    case char_codes.simple_string: {
+    case char_codes.binary_unsafe_string: {
       const value_offset = buffer[offset] += 1;
       while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
         buffer[offset] += 1;
@@ -120,7 +121,7 @@ const decode = (buffer) => {
       buffer[offset] += 1;
       return value;
     }
-    case char_codes.simple_error: {
+    case char_codes.binary_unsafe_error: {
       const value_offset = buffer[offset] += 1;
       while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
         buffer[offset] += 1;
@@ -130,6 +131,15 @@ const decode = (buffer) => {
       return value;
     }
     case char_codes.integer: {
+      const value_offset = buffer[offset] += 1;
+      while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
+        buffer[offset] += 1;
+      }
+      const value = Number(buffer.subarray(value_offset, buffer[offset]).toString());
+      buffer[offset] += 1;
+      return value;
+    }
+    case char_codes.double: {
       const value_offset = buffer[offset] += 1;
       while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
         buffer[offset] += 1;
