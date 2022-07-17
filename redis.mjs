@@ -59,11 +59,12 @@ const char_codes = {
   lf: '\n'.charCodeAt(0),
   simple_string: '+'.charCodeAt(0),
   simple_error: '-'.charCodeAt(0),
-  bulk_string: '$'.charCodeAt(0),
+  binary_safe_string: '$'.charCodeAt(0),
+  binary_safe_error: '!'.charCodeAt(0),
   integer: ':'.charCodeAt(0),
   array: '*'.charCodeAt(0),
   map: '%'.charCodeAt(0),
-  map_key: '+'.charCodeAt(0),
+  set: '~'.charCodeAt(0),
   null: '_'.charCodeAt(0),
   push: '>'.charCodeAt(0),
 };
@@ -85,7 +86,7 @@ const decode = (buffer) => {
   const type_char_code = buffer[buffer[offset]];
 
   switch (type_char_code) {
-    case char_codes.bulk_string: {
+    case char_codes.binary_safe_string: {
       const length_offset = buffer[offset] += 1;
       while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
         buffer[offset] += 1;
@@ -93,6 +94,17 @@ const decode = (buffer) => {
       const length = Number(buffer.subarray(length_offset, buffer[offset]).toString());
       buffer[offset] += 2;
       const value = buffer.subarray(buffer[offset], buffer[offset] += length).toString();
+      buffer[offset] += 1;
+      return value;
+    }
+    case char_codes.binary_safe_error: {
+      const length_offset = buffer[offset] += 1;
+      while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
+        buffer[offset] += 1;
+      }
+      const length = Number(buffer.subarray(length_offset, buffer[offset]).toString());
+      buffer[offset] += 2;
+      const value = new Error(buffer.subarray(buffer[offset], buffer[offset] += length).toString());
       buffer[offset] += 1;
       return value;
     }
@@ -139,6 +151,20 @@ const decode = (buffer) => {
       return value;
     }
     case char_codes.array: {
+      const length_offset = buffer[offset] += 1;
+      while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
+        buffer[offset] += 1;
+      }
+      const length = Number(buffer.subarray(length_offset, buffer[offset]).toString());
+      buffer[offset] += 1;
+      const value = new Array(length);
+      for (let i = 0, l = length; i < l; i += 1) {
+        const v = decode(buffer);
+        value[i] = v;
+      }
+      return value;
+    }
+    case char_codes.set: {
       const length_offset = buffer[offset] += 1;
       while (buffer[buffer[offset]] !== char_codes.cr && buffer[buffer[offset]] !== char_codes.lf) {
         buffer[offset] += 1;
