@@ -40,7 +40,7 @@ jobs:
         ports:
           - 6379:6379
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "redis-cli ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
