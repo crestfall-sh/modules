@@ -15,47 +15,20 @@ import { assert } from './assert.mjs';
 const history = [];
 
 /**
- * @param {any} value
+ * @param {string|any[]} value
  */
 const encode = (value) => {
-  switch (typeof value) {
-    case 'string': {
-      return `$${value.length}\r\n${value}\r\n`; // bulk string, binary-safe
-    }
-    case 'number': {
-      if (Math.floor(value) === value) {
-        return `:${value}\r\n`; // number
-      }
-      return `,${value}\r\n`; // double
-    }
-    case 'boolean': {
-      if (value === true) {
-        return '#t\r\n';
-      }
-      return '#f\r\n';
-    }
-    case 'object': {
-      if (value instanceof Array) {
-        let encoded = `*${value.length}\r\n`;
-        const items = value;
-        items.forEach((item) => {
-          encoded += encode(item);
-        });
-        return encoded;
-      }
-      if (value instanceof Object) {
-        break;
-      }
-      if (value === null) {
-        return '_\r\n';
-      }
-      break;
-    }
-    default: {
-      break;
-    }
+  if (value instanceof Array) {
+    let encoded = `*${value.length}\r\n`;
+    const items = value;
+    items.forEach((item) => {
+      encoded += encode(item);
+    });
+    return encoded;
   }
-  return null;
+  assert(typeof value === 'string');
+  const encoded = `$${value.length}\r\n${value}\r\n`;
+  return encoded;
 };
 
 /**

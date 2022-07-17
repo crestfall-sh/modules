@@ -12,37 +12,49 @@ process.nextTick(async () => {
 
     {
       const set_response = await redis.set(client.connection, 'foo', 'bar');
+      console.log({ set_response });
       assert(typeof set_response === 'string');
       assert(set_response === 'OK');
 
       const get_response = await redis.get(client.connection, 'foo');
+      console.log({ get_response });
       assert(typeof get_response === 'string');
       assert(get_response === 'bar');
     }
 
-
     {
       const set_response = await redis.set(client.connection, 'foo', 'baz', 'GET');
+      console.log({ set_response });
       assert(typeof set_response === 'string');
       assert(set_response === 'bar');
 
       const get_response = await redis.get(client.connection, 'foo');
+      console.log({ get_response });
       assert(typeof get_response === 'string');
       assert(get_response === 'baz');
     }
 
     {
       const set_response = await redis.set(client.connection, 'foo', 'baf', 'PX', '250');
+      console.log({ set_response });
       assert(typeof set_response === 'string');
       assert(set_response === 'OK');
 
       await new Promise((resolve) => setTimeout(resolve, 150));
       const get_response = await redis.get(client.connection, 'foo');
+      console.log({ get_response });
       assert(get_response === 'baf');
 
       await new Promise((resolve) => setTimeout(resolve, 500));
       const get_response2 = await redis.get(client.connection, 'foo');
+      console.log({ get_response2 });
       assert(get_response2 === null);
+    }
+
+    {
+      const get_response = await redis.get(client.connection, 'non-existent');
+      console.log({ get_response });
+      assert(get_response === null);
     }
 
     client.connection.end();
