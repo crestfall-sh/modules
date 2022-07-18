@@ -12,7 +12,6 @@ export interface column {
 }
 
 export interface properties {
-  operators?: Map<string, postgres.PendingQuery<any>>;
   sql?: sql;
 }
 

@@ -1,5 +1,7 @@
 // @ts-check
 
+// https://www.postgresql.org/docs/14/functions-comparison.html
+
 import postgres from 'postgres';
 import * as luxon from 'luxon';
 import { assert } from './assert.mjs';
@@ -207,12 +209,12 @@ const select = async (sql, table, options) => {
       ${ typeof options.gte === 'number' ? sql` <= ${options.gte}` : sql`` }
       ${ typeof options.lt === 'number' ? sql` > ${options.lt}` : sql`` }
       ${ typeof options.lte === 'number' ? sql` >= ${options.lte}` : sql`` }
-      ${ options.is === true ? sql` IS TRUE ` : sql`` }
-      ${ options.is === false ? sql` IS FALSE ` : sql`` }
-      ${ options.is === null ? sql` IS NULL ` : sql`` }
-      ${ options.is_not === true ? sql` IS NOT TRUE ` : sql`` }
-      ${ options.is_not === false ? sql` IS NOT FALSE ` : sql`` }
-      ${ options.is_not === null ? sql` IS NOT NULL ` : sql`` }
+      ${ options.is === true ? sql` IS TRUE` : sql`` }
+      ${ options.is === false ? sql` IS FALSE` : sql`` }
+      ${ options.is === null ? sql` IS NULL` : sql`` }
+      ${ options.is_not === true ? sql` IS NOT TRUE` : sql`` }
+      ${ options.is_not === false ? sql` IS NOT FALSE` : sql`` }
+      ${ options.is_not === null ? sql` IS NOT NULL` : sql`` }
     ` : sql`` }
     ${ typeof options.ascend === 'string' ? sql` ORDER BY ${sql(options.ascend)} ASC` : sql`` }
     ${ typeof options.descend === 'string' ? sql` ORDER BY ${sql(options.descend)} DESC` : sql`` }
@@ -275,32 +277,10 @@ const remove = async (sql, table, id) => {
  */
 export const assign_table_methods = (sql, table) => {
 
-  // https://www.postgresql.org/docs/14/functions-comparison.html
-  const operators = new Map([
-    ['<', sql`<`],
-    ['>', sql`>`],
-    ['<=', sql`<=`],
-    ['>=', sql`>=`],
-    ['=', sql`=`],
-    ['<>', sql`<>`],
-    ['!=', sql`!=`],
-    ['IS', sql`IS`],
-    ['IS TRUE', sql`IS TRUE`],
-    ['IS FALSE', sql`IS FALSE`],
-    ['IS NULL', sql`IS NULL`],
-    ['IS NOT', sql`IS NOT`],
-    ['IS NOT TRUE', sql`IS NOT TRUE`],
-    ['IS NOT FALSE', sql`IS NOT FALSE`],
-    ['IS NOT NULL', sql`IS NOT NULL`],
-  ]);
-
   /**
    * @type {import('./postgres').properties}
    */
-  const properties = {
-    operators,
-    sql,
-  };
+  const properties = { sql };
   Object.assign(table, properties);
 
   /**
