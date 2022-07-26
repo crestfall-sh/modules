@@ -13,4 +13,6 @@ export interface client {
   events: EventEmitter;
   records: record[];
   ready: boolean;
+  subscribed: boolean;
+  subscribed_channels: Set<string>;
 }

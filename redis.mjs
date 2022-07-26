@@ -17,6 +17,12 @@ import net from 'net';
 import { EventEmitter } from 'events';
 import { assert } from './assert.mjs';
 
+const subscribed_allowed_commands = new Set(['subscribe', 'ssubscribe', 'sunsubscribe', 'psubscribe', 'unsubscribe', 'punsubscribe', 'ping', 'reset', 'quit']);
+
+export const error_codes = {
+  ERR_UNEXPECTED_COMMAND: 'ERR_UNEXPECTED_COMMAND',
+};
+
 /**
  * @param {string|any[]} value
  */
@@ -41,12 +47,19 @@ const encode = (value) => {
  * @returns {Promise<any>}
  */
 export const exec = (client, command, ...parameters) => new Promise((resolve, reject) => {
-  assert(typeof command === 'string');
-  parameters.forEach((parameter) => {
-    assert(typeof parameter === 'string');
-  });
-  client.connection.write(encode([command, ...parameters]));
-  client.records.push({ resolve, reject, command, parameters });
+  try {
+    assert(typeof command === 'string');
+    if (client.subscribed === true) {
+      assert(subscribed_allowed_commands.has(command.toLowerCase()) === true, error_codes.ERR_UNEXPECTED_COMMAND, `Unexpected command "${command}", expecting ${Array.from(subscribed_allowed_commands).join(', ')}.`);
+    }
+    parameters.forEach((parameter) => {
+      assert(typeof parameter === 'string');
+    });
+    client.connection.write(encode([command, ...parameters]));
+    client.records.push({ resolve, reject, command, parameters });
+  } catch (e) {
+    reject(e);
+  }
 });
 
 /**
@@ -234,7 +247,14 @@ export const connect = (host, port) => {
   /**
    * @type {import('./redis').client}
    */
-  const client = { connection, events, records, ready: false };
+  const client = {
+    connection,
+    events,
+    records,
+    ready: false,
+    subscribed: false,
+    subscribed_channels: new Set(),
+  };
 
   connection.setNoDelay(true)
     .setKeepAlive(true)
@@ -255,11 +275,19 @@ export const connect = (host, port) => {
       if (response instanceof Array) {
         if (response[push] === true) {
           const event = response[0];
+          assert(typeof event === 'string');
           switch (event) {
             case 'message': {
               const event_channel = response[1];
               const event_data = response[2];
               events.emit(event, event_channel, event_data);
+              return;
+            }
+            case 'pmessage': {
+              const event_pattern = response[1];
+              const event_channel = response[2];
+              const event_data = response[3];
+              events.emit(event, event_pattern, event_channel, event_data);
               return;
             }
             case 'invalidate': {
@@ -270,6 +298,39 @@ export const connect = (host, port) => {
             default: {
               break;
             }
+          }
+        }
+        const event = response[0];
+        assert(typeof event === 'string');
+        switch (event) {
+          case 'subscribe':
+          case 'ssubscribe':
+          case 'psubscribe': {
+            const channel = response[1];
+            const count = response[2];
+            assert(typeof channel === 'string');
+            assert(typeof count === 'number');
+            client.subscribed_channels.add(channel);
+            if (count > 0) {
+              client.subscribed = true;
+            }
+            break;
+          }
+          case 'unsubscribe':
+          case 'sunsubscribe':
+          case 'punsubscribe': {
+            const channel = response[1];
+            const count = response[2];
+            assert(typeof channel === 'string');
+            assert(typeof count === 'number');
+            client.subscribed_channels.delete(channel);
+            if (count === 0) {
+              client.subscribed = false;
+            }
+            break;
+          }
+          default: {
+            break;
           }
         }
       }

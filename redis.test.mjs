@@ -111,31 +111,51 @@ process.nextTick(async () => {
 
 
     {
-      const client3 = redis.connect('localhost', 6379);
-      assert(client3 instanceof Object);
+      const client2 = redis.connect('localhost', 6379);
+      assert(client2 instanceof Object);
 
-      client3.events.on('ready', async () => {
-        const tracking_response = await redis.exec(client3, 'CLIENT', 'TRACKING', 'ON');
+      client2.events.on('ready', async () => {
+        const tracking_response = await redis.exec(client2, 'CLIENT', 'TRACKING', 'ON');
         console.log({ tracking_response });
-        const set_response = await redis.exec(client3, 'SET', 'foo', 'bar');
+        const set_response = await redis.exec(client2, 'SET', 'foo', 'bar');
         console.log({ set_response });
-        const get_response = await redis.exec(client3, 'GET', 'foo');
+        const get_response = await redis.exec(client2, 'GET', 'foo');
         console.log({ get_response });
 
-        const client4 = redis.connect('localhost', 6379);
-        assert(client4 instanceof Object);
+        const client3 = redis.connect('localhost', 6379);
+        assert(client3 instanceof Object);
 
-        client4.events.on('ready', async () => {
-          await redis.exec(client4, 'SET', 'foo', 'baz');
+        client3.events.on('ready', async () => {
+          await redis.exec(client3, 'SET', 'foo', 'baz');
         });
 
-        client3.events.on('invalidate', (key) => {
-          console.log(`invalidate client-side cached value for key: ${key}`);
+        client2.events.on('invalidate', (key) => {
+          console.log(`invalidate of client-side cached value for key ${key} OK.`);
+          client2.connection.end();
           client3.connection.end();
-          client4.connection.end();
         });
 
       });
+
+      await new Promise((resolve) => client2.connection.once('end', resolve));
+    }
+    {
+      const client2 = redis.connect('localhost', 6379);
+      assert(client2 instanceof Object);
+
+      client2.events.on('ready', async () => {
+        const subscribe_response = await redis.exec(client2, 'SUBSCRIBE', 'test-channel');
+        console.log({ subscribe_response });
+        try {
+          await redis.exec(client2, 'SET', 'foo', 'bar');
+        } catch (e) {
+          assert(e.code === redis.error_codes.ERR_UNEXPECTED_COMMAND);
+          console.log('expected error code ERR_UNEXPECTED_COMMAND OK.');
+          client2.connection.end();
+        }
+      });
+
+      await new Promise((resolve) => client2.connection.once('end', resolve));
     }
 
   });
