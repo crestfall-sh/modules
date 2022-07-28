@@ -134,8 +134,9 @@ process.nextTick(async () => {
           await redis.exec(client3, 'SET', 'foo', 'baz');
         });
 
-        client2.events.on('invalidate', (key) => {
-          console.log(`invalidate of client-side cached value for key ${key} OK.`);
+        client2.events.on('invalidate', (keys) => {
+          assert(keys instanceof Array);
+          console.log(`invalidate of client-side cached value for keys "${keys.join(', ')}" OK.`);
           client2.connection.end();
           client3.connection.end();
         });

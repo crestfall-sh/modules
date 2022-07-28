@@ -12,6 +12,7 @@ export interface client {
   connection: net.Socket;
   events: EventEmitter;
   records: record[];
+  debug: boolean;
   ready: boolean;
   subscribed: boolean;
   subscribed_channels: Set<string>;

@@ -252,6 +252,7 @@ export const connect = (host, port) => {
     connection,
     events,
     records,
+    debug: false,
     ready: false,
     subscribed: false,
     subscribed_channels: new Set(),
@@ -265,6 +266,9 @@ export const connect = (host, port) => {
     .on('data', (data) => {
 
       const response = decode(data);
+      if (client.debug === true) {
+        console.log({ response });
+      }
 
       if (response instanceof Object) {
         if (response['server'] === 'redis' && response['proto'] === 3) {
@@ -292,8 +296,8 @@ export const connect = (host, port) => {
               return;
             }
             case 'invalidate': {
-              const event_key = response[1];
-              events.emit(event, event_key);
+              const event_keys = response[1];
+              events.emit(event, event_keys);
               return;
             }
             default: {
