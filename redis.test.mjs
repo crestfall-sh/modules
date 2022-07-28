@@ -23,6 +23,12 @@ process.nextTick(async () => {
     }
 
     {
+      const keys_response = await redis.exec(client, 'KEYS', '*');
+      console.log({ keys_response });
+      assert(keys_response instanceof Array);
+    }
+
+    {
       const set_response = await redis.exec(client, 'SET', 'foo', 'baz', 'GET');
       console.log({ set_response });
       assert(typeof set_response === 'string');
@@ -109,7 +115,6 @@ process.nextTick(async () => {
       await new Promise((resolve) => client2.connection.once('end', resolve));
     }
 
-
     {
       const client2 = redis.connect('localhost', 6379);
       assert(client2 instanceof Object);
@@ -139,6 +144,7 @@ process.nextTick(async () => {
 
       await new Promise((resolve) => client2.connection.once('end', resolve));
     }
+
     {
       const client2 = redis.connect('localhost', 6379);
       assert(client2 instanceof Object);
@@ -147,7 +153,8 @@ process.nextTick(async () => {
         const subscribe_response = await redis.exec(client2, 'SUBSCRIBE', 'test-channel');
         console.log({ subscribe_response });
         try {
-          await redis.exec(client2, 'SET', 'foo', 'bar');
+          const set_response = await redis.exec(client2, 'SET', 'foo', 'bar');
+          console.log({ set_response });
         } catch (e) {
           assert(e.code === redis.error_codes.ERR_UNEXPECTED_COMMAND);
           console.log('expected error code ERR_UNEXPECTED_COMMAND OK.');

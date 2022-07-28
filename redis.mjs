@@ -49,8 +49,9 @@ const encode = (value) => {
 export const exec = (client, command, ...parameters) => new Promise((resolve, reject) => {
   try {
     assert(typeof command === 'string');
+    command = command.toLowerCase();
     if (client.subscribed === true) {
-      assert(subscribed_allowed_commands.has(command.toLowerCase()) === true, error_codes.ERR_UNEXPECTED_COMMAND, `Unexpected command "${command}", expecting ${Array.from(subscribed_allowed_commands).join(', ')}.`);
+      assert(subscribed_allowed_commands.has(command) === true, error_codes.ERR_UNEXPECTED_COMMAND, `Unexpected command "${command}", expecting ${Array.from(subscribed_allowed_commands).join(', ')}.`);
     }
     parameters.forEach((parameter) => {
       assert(typeof parameter === 'string');
@@ -300,12 +301,20 @@ export const connect = (host, port) => {
             }
           }
         }
-        const event = response[0];
-        assert(typeof event === 'string');
-        switch (event) {
+      }
+
+      assert(records.length > 0);
+
+      const { command, resolve, reject } = records.shift();
+
+      if (response instanceof Array) {
+        switch (command) {
           case 'subscribe':
           case 'ssubscribe':
           case 'psubscribe': {
+            const event = response[0];
+            assert(typeof event === 'string');
+            assert(event === command);
             const channel = response[1];
             const count = response[2];
             assert(typeof channel === 'string');
@@ -319,6 +328,9 @@ export const connect = (host, port) => {
           case 'unsubscribe':
           case 'sunsubscribe':
           case 'punsubscribe': {
+            const event = response[0];
+            assert(typeof event === 'string');
+            assert(event === command);
             const channel = response[1];
             const count = response[2];
             assert(typeof channel === 'string');
@@ -335,9 +347,6 @@ export const connect = (host, port) => {
         }
       }
 
-      assert(records.length > 0);
-
-      const { resolve, reject } = records.shift();
       if (response instanceof Error) {
         reject(response);
       } else {
