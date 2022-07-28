@@ -24,7 +24,7 @@ export const error_codes = {
 };
 
 /**
- * @param {string|any[]} value
+ * @param {string|string[]} value
  */
 const encode = (value) => {
   if (value instanceof Array) {
