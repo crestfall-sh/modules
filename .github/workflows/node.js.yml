@@ -64,6 +64,9 @@ jobs:
     - name: Run base32 tests
       run: node ./base32.test.mjs
 
+    - name: Run csv tests
+      run: node ./csv.test.mjs
+
     - name: Run casefold tests
       run: node ./casefold.test.mjs
 
