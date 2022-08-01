@@ -144,6 +144,7 @@ export const read_csv = (file_path, high_water_mark) => {
     if (rows.length > 0) {
       emitter.emit('rows', rows);
     }
+    emitter.emit('end');
   });
 
 
