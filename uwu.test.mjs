@@ -13,7 +13,6 @@ import * as proc from './proc.mjs';
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const __cwd = process.cwd();
-console.log({ __filename, __dirname, __cwd });
 
 const test_html = `
   <html>
@@ -27,7 +26,9 @@ const test_file = fs.readFileSync(__filename, { encoding: 'utf-8' });
 
 const test = async () => {
 
-  console.log(`process id ${process.pid}; thread id ${worker_threads.threadId}`);
+  uwu.default_headers.add('X-Custom-Default-Header');
+
+  console.log({ __filename, __dirname, __cwd, pid: process.pid, wid: worker_threads.threadId });
 
   const port = 8080;
   const origin = `http://localhost:${port}`;
@@ -39,10 +40,18 @@ const test = async () => {
     response.html = test_html;
   }));
   app.get('/test-headers', uwu.use_middlewares(async (response, request) => {
-    response.json = request;
+    const headers = {};
+    request.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
+    response.json = { ...request, headers };
   }));
   app.post('/test-json-post', uwu.use_middlewares(async (response, request) => {
-    response.json = request;
+    const headers = {};
+    request.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
+    response.json = { ...request, headers };
   }));
 
   const token = await uwu.serve_http(app, uwu.port_access_types.SHARED, port);
@@ -51,7 +60,7 @@ const test = async () => {
     method: 'GET',
   });
   assert(response.status === 200);
-  assert(response.headers.get('content-encoding') === null);
+  assert(response.headers.get('Content-Encoding') === null);
   const body = await response.text();
   assert(body === test_html);
 
@@ -59,7 +68,7 @@ const test = async () => {
     method: 'GET',
   });
   assert(response2.status === 200);
-  assert(response2.headers.get('content-encoding') === null);
+  assert(response2.headers.get('Content-Encoding') === null);
   const body2 = await response2.text();
   assert(body2 === test_file);
 
@@ -67,7 +76,7 @@ const test = async () => {
     method: 'GET',
   });
   assert(response3.status === 200);
-  assert(response3.headers.get('content-encoding') === null);
+  assert(response3.headers.get('Content-Encoding') === null);
   const body3 = await response3.text();
   assert(body3 === test_file);
 
@@ -82,11 +91,11 @@ const test = async () => {
   assert(body4 instanceof Object);
   assert(body4.method === 'get');
   assert(body4.headers instanceof Object);
-  assert(body4.headers.host === 'localhost:8080');
+  assert(body4.headers.Host === 'localhost:8080');
 
   const response5 = await fetch(`${origin}/test-json-post`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ foo: 'bar' }),
   });
   /**
@@ -96,8 +105,8 @@ const test = async () => {
   assert(response5.status === 200);
   assert(body5 instanceof Object);
   assert(body5.method === 'post');
-  assert(body5.body.json instanceof Object);
-  assert(body5.body.json.foo === 'bar');
+  assert(body5.json instanceof Object);
+  assert(body5.json.foo === 'bar');
 
   // avoid dropping requests from other threads
   await proc.sleep(500);

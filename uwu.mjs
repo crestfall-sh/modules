@@ -8,6 +8,19 @@ import mime_types from 'mime-types';
 import { default as uws } from 'uWebSockets.js';
 import { assert } from './assert.mjs';
 
+export const default_headers = new Set([
+  'Host',
+  'Origin',
+  'Accept',
+  'Accept-Encoding',
+  'Content-Type',
+  'User-Agent',
+  'Cookie',
+  'X-Forwarded-Proto',
+  'X-Forwarded-Host',
+  'X-Forwarded-For',
+]);
+
 /**
  * @type {import('./uwu').cache_control_types}
  */
@@ -64,7 +77,7 @@ const apply_middlewares = async (res, middlewares, response, request) => {
     assert(typeof response.file_cache === 'boolean');
     assert(typeof response.file_cache_max_age_ms === 'number');
     assert(typeof response.status === 'number');
-    assert(response.headers instanceof Object);
+    assert(response.headers instanceof Map);
     if (typeof response.file_path === 'string') {
       assert(path.isAbsolute(response.file_path) === true);
       try {
@@ -108,36 +121,33 @@ const apply_middlewares = async (res, middlewares, response, request) => {
           response.buffer = buffer;
         }
         if (typeof response.file_content_type === 'string') {
-          response.headers['Content-Type'] = response.file_content_type;
+          response.headers.set('Content-Type', response.file_content_type);
         }
       }
     } else if (typeof response.text === 'string') {
-      response.headers['Content-Type'] = 'text/plain';
+      response.headers.set('Content-Type', 'text/plain');
       response.buffer = Buffer.from(response.text);
     } else if (typeof response.html === 'string') {
-      response.headers['Content-Type'] = 'text/html';
+      response.headers.set('Content-Type', 'text/html');
       response.buffer = Buffer.from(response.html);
     } else if (response.json instanceof Object) {
-      response.headers['Content-Type'] = 'application/json';
+      response.headers.set('Content-Type', 'application/json');
       response.buffer = Buffer.from(JSON.stringify(response.json));
     } else if (response.buffer instanceof Buffer) {
-      if (response.headers['Content-Type'] === undefined) {
-        response.headers['Content-Type'] = 'application/octet-stream';
+      if (response.headers.has('Content-Type') === false) {
+        response.headers.set('Content-Type', 'application/octet-stream');
       }
     }
     if (typeof response.file_name === 'string' && response.file_dispose === true) {
-      if (response.headers['Content-Disposition'] === undefined) {
-        response.headers['Content-Disposition'] = `attachment; filename="${response.file_name}"`;
+      if (response.headers.has('Content-Disposition') === false) {
+        response.headers.set('Content-Disposition', `attachment; filename="${response.file_name}"`);
       }
     }
     res.writeStatus(String(response.status));
-    Object.entries(response.headers).forEach((entry) => {
-      const [key, value] = entry;
-      assert(typeof key === 'string');
-      assert(typeof value === 'string');
+    response.headers.forEach((value, key) => {
       res.writeHeader(key, value);
     });
-    assert(response.buffer === null || response.buffer instanceof Buffer);
+    assert(response.buffer instanceof Buffer || response.buffer === null);
     if (response.status === 304 || response.buffer === null) {
       res.end();
     } else {
@@ -182,22 +192,20 @@ export const use_middlewares = (...middlewares) => {
     const request = {
       url: req.getUrl(),
       method: req.getMethod(),
-      headers: {
-        host: req.getHeader('host'),
-        origin: req.getHeader('origin'),
-        accept: req.getHeader('accept'),
-        accept_encoding: req.getHeader('accept-encoding'),
-        content_type: req.getHeader('content-type'),
-        user_agent: req.getHeader('user-agent'),
-        cookie: req.getHeader('cookie'),
-        x_forwarded_proto: req.getHeader('x-forwarded-proto'),
-        x_forwarded_host: req.getHeader('x-forwarded-host'),
-        x_forwarded_for: req.getHeader('x-forwarded-for'),
-      },
+      headers: new Map(),
       query: new URLSearchParams(req.getQuery()),
-      body: { buffer: null, json: null, parts: null },
       ip_address: Buffer.from(res.getRemoteAddressAsText()).toString(),
+      buffer: null,
+      json: null,
+      parts: null,
+      error: null,
     };
+
+    default_headers.forEach((header) => {
+      // uWebSockets.js uses lower-case header values
+      // https://unetworking.github.io/uWebSockets.js/generated/interfaces/HttpRequest.html#getHeader
+      request.headers.set(header, req.getHeader(header.toLowerCase()));
+    });
 
     /**
      * @type {import('./uwu').response}
@@ -209,7 +217,7 @@ export const use_middlewares = (...middlewares) => {
       error: null,
 
       status: 200,
-      headers: { 'Cache-Control': cache_control_types.no_store },
+      headers: new Map([['Cache-Control', cache_control_types.no_store]]),
 
       file_path: null,
       file_name: null,
@@ -224,18 +232,18 @@ export const use_middlewares = (...middlewares) => {
       buffer: null,
 
     };
-    request.body.buffer = Buffer.from([]);
+    request.buffer = Buffer.from([]);
     res.onData((chunk_arraybuffer, is_last) => {
       const chunk_buffer = Buffer.from(chunk_arraybuffer.slice(0));
-      request.body.buffer = Buffer.concat([request.body.buffer, chunk_buffer]);
+      request.buffer = Buffer.concat([request.buffer, chunk_buffer]);
       if (is_last === true) {
         try {
-          if (request.body.buffer.length > 0) {
-            if (request.headers.content_type.includes('application/json') === true) {
-              request.body.json = JSON.parse(request.body.buffer.toString());
+          if (request.buffer.length > 0) {
+            if (request.headers.get('Content-Type').includes('application/json') === true) {
+              request.json = JSON.parse(request.buffer.toString());
             }
-            if (request.headers.content_type.includes('multipart/form-data') === true) {
-              request.body.parts = uws.getParts(request.body.buffer, request.headers.content_type);
+            if (request.headers.get('Content-Type').includes('multipart/form-data') === true) {
+              request.parts = uws.getParts(request.buffer, request.headers.get('Content-Type'));
             }
           }
         } catch (e) {

@@ -16,9 +16,6 @@ export interface port_access_types {
 
 export const port_access_types: port_access_types;
 
-export type headers = Record<string, string>;
-export type json = any;
-
 export interface response {
 
   aborted: boolean;
@@ -26,18 +23,18 @@ export interface response {
   error: Error;
 
   status: number;
-  headers: headers;
+  headers: Map<string, string>;
 
   file_path: string;
   file_name: string;
-  file_content_type?: string;
+  file_content_type: string;
   file_dispose: boolean;
   file_cache: boolean;
   file_cache_max_age_ms: number;
 
   text: string;
   html: string;
-  json: json;
+  json: any;
   buffer: Buffer;
 
 }
@@ -45,7 +42,7 @@ export interface response {
 export interface static_response {
   file_cache?: boolean;
   file_cache_max_age_ms?: number;
-  headers?: headers;
+  headers?: Map<string, string>;
 }
 
 export interface cached_file { 
@@ -55,33 +52,18 @@ export interface cached_file {
   timestamp: number;
 }
 
-export interface request_headers {
-  host: string;
-  origin: string;
-  accept: string;
-  accept_encoding: string;
-  content_type: string;
-  user_agent: string;
-  cookie: string;
-  x_forwarded_proto: string;
-  x_forwarded_host: string;
-  x_forwarded_for: string;
-}
-
-export interface request_body {
-  buffer: Buffer;
-  json: json;
-  parts: uws.MultipartField[];
-}
-
 export interface request {
   url: string;
   method: string;
-  headers: request_headers;
+  headers: Map<string, string>;
   query: URLSearchParams;
-  body: request_body;
   ip_address: string;
-  error?: Error;
+  
+  buffer: Buffer;
+  json: any;
+  parts: uws.MultipartField[];
+
+  error: Error;
 }
 
 export type middleware = (response: response, request: request) => void;
@@ -96,5 +78,8 @@ export const use_static_middleware: use_static_middleware;
 
 export type serve_http = (app: uws.TemplatedApp, port_access_type: number, port: number) => Promise<uws.us_listen_socket>;
 export const serve_http: serve_http;
+
+export type default_headers = Set<string>;
+export const default_headers: default_headers;
 
 export * as uws from 'uWebSockets.js';
