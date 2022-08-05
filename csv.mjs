@@ -147,11 +147,14 @@ export const read_csv = (file_path, high_water_mark) => {
     emitter.emit('end');
   });
 
-
   emitter.on('resume', () => {
     if (stream.readableEnded === false) {
       stream.resume();
     }
+  });
+
+  emitter.on('destroy', () => {
+    stream.destroy();
   });
 
   return emitter;

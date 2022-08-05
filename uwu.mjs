@@ -4,6 +4,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import stream from 'stream';
 import mime_types from 'mime-types';
 import { default as uws } from 'uWebSockets.js';
 import { assert } from './assert.mjs';
@@ -147,12 +148,42 @@ const apply_middlewares = async (res, middlewares, response, request) => {
     response.headers.forEach((value, key) => {
       res.writeHeader(key, value);
     });
+
     assert(response.buffer instanceof Buffer || response.buffer === null);
-    if (response.status === 304 || response.buffer === null) {
+
+    if (response.status === 304) {
       res.end();
-    } else {
-      res.end(response.buffer);
+      return;
     }
+
+    // unstable, untested
+    if (response.stream instanceof stream.Readable) {
+      response.stream.on('data', (chunk) => {
+        /**
+         * @type {Buffer}
+         */
+        const buffer = chunk;
+        const write_response = res.write(buffer);
+        if (write_response === false) {
+          response.stream.pause();
+        }
+      });
+      response.stream.on('end', () => {
+        res.end();
+      });
+      res.onWritable(() => {
+        response.stream.resume();
+        return true;
+      });
+      return;
+    }
+
+    if (response.buffer instanceof Buffer) {
+      res.write(response.buffer);
+    }
+
+    res.end();
+
   } catch (e) {
     response.error = e;
     if (response.aborted === false) {
@@ -230,6 +261,7 @@ export const use_middlewares = (...middlewares) => {
       html: null,
       json: null,
       buffer: null,
+      stream: null,
 
     };
     request.buffer = Buffer.from([]);

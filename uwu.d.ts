@@ -1,3 +1,4 @@
+import stream from 'stream';
 import * as uws from 'uWebSockets.js';
 
 export interface cache_control_types {
@@ -36,6 +37,7 @@ export interface response {
   html: string;
   json: any;
   buffer: Buffer;
+  stream: stream.Readable;
 
 }
 
