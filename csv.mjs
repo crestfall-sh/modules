@@ -64,6 +64,8 @@ export const read_csv = (file_path, high_water_mark) => {
 
     let inside_double_quotes = false;
 
+    let column_enclosed = false;
+
     for (let i = 0, l = data.length; i < l; i += 1) {
 
       if (row_start === null) {
@@ -77,12 +79,20 @@ export const read_csv = (file_path, high_water_mark) => {
       const char_code = data[i];
 
       if (char_code === double_quote) {
-        inside_double_quotes = !inside_double_quotes;
+        if (inside_double_quotes === true) {
+          inside_double_quotes = false;
+          column_enclosed = true;
+        } else {
+          inside_double_quotes = true;
+        }
       }
 
       if (inside_double_quotes === false) {
         if (char_code === comma) {
-          const column_end = i;
+          if (column_enclosed === true) {
+            column_start += 1;
+          }
+          const column_end = column_enclosed === true ? i - 1 : i;
           const column_value = data.subarray(column_start, column_end).toString();
           columns.push(column_value);
           column_start = null;
@@ -90,7 +100,10 @@ export const read_csv = (file_path, high_water_mark) => {
         if (char_code === cr) {
           const next_char_code = data[i + 1];
           if (next_char_code === lf) {
-            const column_end = i;
+            if (column_enclosed === true) {
+              column_start += 1;
+            }
+            const column_end = column_enclosed === true ? i - 1 : i;
             const column_value = data.subarray(column_start, column_end).toString();
             columns.push(column_value);
             column_start = null;
