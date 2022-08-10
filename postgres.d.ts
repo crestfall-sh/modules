@@ -26,7 +26,8 @@ export interface methods<T> extends properties {
 }
 
 export interface table<T> extends methods<T> {
-  name: string;
+  name: string; // sql-friendly name, snake-case
+  name_alt: string; // url-friendly name, kebab-case
   columns: column[];
 }
 
