@@ -200,26 +200,27 @@ const select = async (sql, table, options) => {
     // ascend must not co-exist with descend.
     assert(typeof options.ascend === 'undefined');
   }
+  const none = sql``;
   const items = await sql`
     SELECT * FROM ${sql(table.name)}
     ${ typeof options.where === 'string' ? sql` WHERE ${sql(options.where)} 
-      ${ typeof options.eq === 'boolean' || typeof options.eq === 'string' || typeof options.eq === 'number' ? sql` = ${options.eq}` : sql`` }
-      ${ typeof options.neq === 'boolean' || typeof options.neq === 'string' || typeof options.neq === 'number' ? sql` != ${options.neq}` : sql`` }
-      ${ typeof options.gt === 'number' ? sql` < ${options.gt}` : sql`` }
-      ${ typeof options.gte === 'number' ? sql` <= ${options.gte}` : sql`` }
-      ${ typeof options.lt === 'number' ? sql` > ${options.lt}` : sql`` }
-      ${ typeof options.lte === 'number' ? sql` >= ${options.lte}` : sql`` }
-      ${ options.is === true ? sql` IS TRUE` : sql`` }
-      ${ options.is === false ? sql` IS FALSE` : sql`` }
-      ${ options.is === null ? sql` IS NULL` : sql`` }
-      ${ options.is_not === true ? sql` IS NOT TRUE` : sql`` }
-      ${ options.is_not === false ? sql` IS NOT FALSE` : sql`` }
-      ${ options.is_not === null ? sql` IS NOT NULL` : sql`` }
-    ` : sql`` }
-    ${ typeof options.ascend === 'string' ? sql` ORDER BY ${sql(options.ascend)} ASC` : sql`` }
-    ${ typeof options.descend === 'string' ? sql` ORDER BY ${sql(options.descend)} DESC` : sql`` }
-    ${ typeof options.limit === 'number' ? sql` LIMIT ${options.limit}` : sql`` }
-    ${ typeof options.offset === 'number' ? sql` OFFSET ${options.offset}` : sql`` }
+      ${ typeof options.eq === 'boolean' || typeof options.eq === 'string' || typeof options.eq === 'number' ? sql` = ${options.eq}` : none }
+      ${ typeof options.neq === 'boolean' || typeof options.neq === 'string' || typeof options.neq === 'number' ? sql` != ${options.neq}` : none }
+      ${ typeof options.gt === 'number' ? sql` < ${options.gt}` : none }
+      ${ typeof options.gte === 'number' ? sql` <= ${options.gte}` : none }
+      ${ typeof options.lt === 'number' ? sql` > ${options.lt}` : none }
+      ${ typeof options.lte === 'number' ? sql` >= ${options.lte}` : none }
+      ${ options.is === true ? sql` IS TRUE` : none }
+      ${ options.is === false ? sql` IS FALSE` : none }
+      ${ options.is === null ? sql` IS NULL` : none }
+      ${ options.is_not === true ? sql` IS NOT TRUE` : none }
+      ${ options.is_not === false ? sql` IS NOT FALSE` : none }
+      ${ options.is_not === null ? sql` IS NOT NULL` : none }
+    ` : none }
+    ${ typeof options.ascend === 'string' ? sql` ORDER BY ${sql(options.ascend)} ASC` : none }
+    ${ typeof options.descend === 'string' ? sql` ORDER BY ${sql(options.descend)} DESC` : none }
+    ${ typeof options.limit === 'number' ? sql` LIMIT ${options.limit}` : none }
+    ${ typeof options.offset === 'number' ? sql` OFFSET ${options.offset}` : none }
     ;`;
   assert(items instanceof Array);
   items.forEach((item) => {

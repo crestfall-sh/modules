@@ -2,6 +2,8 @@
 
 /**
  * @typedef {import('./postgresql.test').user} user
+ * @typedef {import('./postgresql.test').role} role
+ * @typedef {import('./postgresql.test').user_role} user_role
  */
 
 import * as crypto from 'crypto';
@@ -23,6 +25,7 @@ process.nextTick(async () => {
    */
   const users_table = {
     name: 'users',
+    name_alt: 'users',
     columns: [
       { name: 'id', type: 'serial', primary: true },
       { name: 'email', type: 'text' },
@@ -32,10 +35,117 @@ process.nextTick(async () => {
     ],
   };
 
-  postgres.assign_table_methods(sql, users_table);
+  /**
+   * @type {import('./postgres').table<role>}
+   */
+  const roles_table = {
+    name: 'roles',
+    name_alt: 'roles',
+    columns: [
+      { name: 'id', type: 'serial', primary: true },
+      { name: 'name', type: 'text', unique: true },
+      { name: 'permissions', type: 'text[]' },
+    ],
+  };
 
-  await users_table.drop_table();
-  await users_table.create_table();
+  /**
+   * @type {import('./postgres').table<user_role>}
+   */
+  const user_roles_table = {
+    name: 'user_roles',
+    name_alt: 'user_roles',
+    columns: [
+      { name: 'id', type: 'serial', primary: true },
+      { name: 'user_id', type: 'integer', references: 'users' },
+      { name: 'role_id', type: 'integer', references: 'roles' },
+    ],
+  };
+
+  const list = [users_table, roles_table, user_roles_table];
+
+  for (let i = 0, l = list.length; i < l; i += 1) {
+    const table = list[i];
+    postgres.assign_table_methods(sql, table);
+    await table.drop_table();
+    await table.create_table();
+  }
+
+  // LEFT JOIN TEST
+  {
+    /**
+     * @type {user}
+     */
+    const alice = {
+      id: null,
+      email: 'alice@example.com',
+      email_code: null,
+      email_verified: false,
+      created: luxon.DateTime.now().toISO(),
+    };
+    /**
+     * @type {user}
+     */
+    const bob = {
+      id: null,
+      email: 'bob@example.com',
+      email_code: null,
+      email_verified: false,
+      created: luxon.DateTime.now().toISO(),
+    };
+    await users_table.insert([alice, bob]);
+    /**
+     * @type {role}
+     */
+    const admin = {
+      id: null,
+      name: 'admin',
+      permissions: ['users:read,write'],
+    };
+    /**
+     * @type {role}
+     */
+    const supervisor = {
+      id: null,
+      name: 'supervisor',
+      permissions: ['report-assignments:read,write'],
+    };
+    await roles_table.insert([admin, supervisor]);
+    /**
+     * @type {user_role}
+     */
+    const alice_user_role = {
+      id: null,
+      user_id: alice.id,
+      role_id: admin.id,
+    };
+    /**
+     * @type {user_role}
+     */
+    const bob_user_role = {
+      id: null,
+      user_id: bob.id,
+      role_id: supervisor.id,
+    };
+    await user_roles_table.insert([alice_user_role, bob_user_role]);
+    const items = await sql`
+      SELECT * FROM 
+        (
+          SELECT * FROM "user_roles" WHERE "user_id" = ${alice.id}
+        ) as user_role
+      LEFT OUTER JOIN
+        (
+          SELECT * FROM "roles"
+        ) as role
+      ON user_role."id" = role."id";
+    `;
+    console.log({ items });
+  }
+
+  for (let i = 0, l = list.length; i < l; i += 1) {
+    const table = list[i];
+    await table.drop_table();
+    await table.create_table();
+  }
 
   /**
    * @type {number}
