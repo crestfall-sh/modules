@@ -16,7 +16,18 @@ const no_redis = process.argv.includes('--no-redis');
  */
 export const connect_no_redis = () => {
 
-  const redis_client = null;
+  /**
+   * @type {import('./redis').client}
+   */
+  const redis_client = {
+    connection: null,
+    events: null,
+    records: null,
+    debug: null,
+    ready: false,
+    subscribed: null,
+    subscribed_channels: null,
+  };
 
   /**
    * @type {Map<string, session>}
