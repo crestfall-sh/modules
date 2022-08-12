@@ -24,7 +24,7 @@ export const connect_no_redis = () => {
     events: null,
     records: null,
     debug: null,
-    ready: false,
+    ready: true,
     subscribed: null,
     subscribed_channels: null,
   };
