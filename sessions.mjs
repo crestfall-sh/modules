@@ -9,10 +9,70 @@ import * as luxon from 'luxon';
 import * as redis from './redis.mjs';
 import { assert } from './assert.mjs';
 
+const no_redis = process.argv.includes('--no-redis');
+
+/**
+ * @type {import('./sessions').connect<any>}
+ */
+export const connect_no_redis = () => {
+
+  const redis_client = null;
+
+  /**
+   * @type {Map<string, session>}
+   */
+  const map = new Map();
+
+  /**
+   * @type {import('./sessions').set_session<any>}
+   */
+  const set_session = async (session) => {
+    assert(session instanceof Object);
+    assert(typeof session.id === 'string');
+    map.set(session.id, session);
+    return null;
+  };
+
+  /**
+   * @type {import('./sessions').get_session<any>}
+   */
+  const get_session = async (session_id) => {
+    assert(typeof session_id === 'string');
+    if (map.has(session_id) === true) {
+      const session = map.get(session_id);
+      return session;
+    }
+    return null;
+  };
+
+  /**
+   * @type {import('./sessions').create_session<any>}
+   */
+  const create_session = async (data) => {
+    assert(data instanceof Object);
+    const id = crypto.randomBytes(32).toString('hex');
+    const created = luxon.DateTime.now().toISO();
+    const session = { id, created, data };
+    await set_session(session);
+    return session;
+  };
+
+  /**
+   * @type {import('./sessions').client}
+   */
+  const client = { redis_client, set_session, get_session, create_session };
+  return client;
+
+};
+
 /**
  * @type {import('./sessions').connect<any>}
  */
 export const connect = () => {
+
+  if (no_redis === true) {
+    return connect_no_redis();
+  }
 
   const redis_client = redis.connect('localhost', 6379);
 

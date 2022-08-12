@@ -11,7 +11,7 @@ export type get_session<T> = (session_id: string) => Promise<session<T>>;
 export type create_session<T> = (data: T) => Promise<session<T>>;
 
 export interface client<T> {
-  redis_client: redis.redis_client;
+  redis_client: redis.client;
   set_session: set_session<T>;
   get_session: get_session<T>;
   create_session: create_session<T>;
