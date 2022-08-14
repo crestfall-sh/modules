@@ -152,7 +152,8 @@ process.nextTick(async () => {
   {
     const { items, count } = await users_table.select({ limit: 10, offset: 10, count: true });
     console.log({ items, count });
-    assert(items.length === count);
+    assert(items.length === 0); // items in this query with pagination
+    assert(count === 2); // total items in this query without pagination
   }
 
   // explain test

@@ -238,20 +238,16 @@ const select = async (sql, table, options) => {
 
   if (options.count === true) {
     const count_rows = await sql`
-      SELECT COUNT(*) FROM ${sql(table.name)} ${filter} ${pagination};
+      SELECT COUNT(*) FROM ${sql(table.name)} ${filter};
     `;
     assert(count_rows instanceof Array);
-    if (count_rows.length > 0) {
-      const count_row = count_rows[0];
-      assert(count_row instanceof Object);
-      assert(typeof count_row.count === 'string');
-      const items_count = Number(count_row.count);
-      assert(typeof items_count === 'number');
-      assert(Number.isFinite(items_count) === true);
-      select_response.count = items_count;
-    } else {
-      select_response.count = 0;
-    }
+    const count_row = count_rows[0];
+    assert(count_row instanceof Object);
+    assert(typeof count_row.count === 'string');
+    const items_count = Number(count_row.count);
+    assert(typeof items_count === 'number');
+    assert(Number.isFinite(items_count) === true);
+    select_response.count = items_count;
   }
 
   if (options.explain === true) {
