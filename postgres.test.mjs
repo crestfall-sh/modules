@@ -148,6 +148,21 @@ process.nextTick(async () => {
     assert(items.length === count);
   }
 
+  // count exceed test
+  {
+    const { items, count } = await users_table.select({ limit: 10, offset: 10, count: true });
+    console.log({ items, count });
+    assert(items.length === count);
+  }
+
+  // explain test
+  {
+    const { items, explain } = await users_table.select({ explain: true });
+    console.log({ items, explain });
+    assert(explain instanceof Array);
+    assert(explain.length === 1);
+  }
+
   for (let i = 0, l = list.length; i < l; i += 1) {
     const table = list[i];
     await table.drop_table();

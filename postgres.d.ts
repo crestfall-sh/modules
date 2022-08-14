@@ -14,6 +14,7 @@ export interface column {
 export interface select_response<T> {
   items: T[];
   count: number;
+  explain: Record<string, string>[];
 }
 
 export interface properties {
@@ -62,6 +63,8 @@ export interface options {
   offset?: number;
   // count
   count?: boolean;
+  // explain
+  explain?: boolean;
 }
 export type select<T> = (sql: sql, table: table<T>, options: options) => Promise<select_response<T>>;
 export type first<T> = (sql: sql, table: table<T>, options: options) => Promise<T>;
