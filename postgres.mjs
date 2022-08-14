@@ -201,8 +201,7 @@ const select = async (sql, table, options) => {
     assert(typeof options.ascend === 'undefined');
   }
   const none = sql``;
-  const items = await sql`
-    SELECT * FROM ${sql(table.name)}
+  const filter = sql`
     ${ typeof options.where === 'string' ? sql` WHERE ${sql(options.where)} 
       ${ typeof options.eq === 'boolean' || typeof options.eq === 'string' || typeof options.eq === 'number' ? sql` = ${options.eq}` : none }
       ${ typeof options.neq === 'boolean' || typeof options.neq === 'string' || typeof options.neq === 'number' ? sql` != ${options.neq}` : none }
@@ -217,15 +216,35 @@ const select = async (sql, table, options) => {
       ${ options.is_not === false ? sql` IS NOT FALSE` : none }
       ${ options.is_not === null ? sql` IS NOT NULL` : none }
     ` : none }
+  `;
+  const sort = sql`
     ${ typeof options.ascend === 'string' ? sql` ORDER BY ${sql(options.ascend)} ASC` : none }
     ${ typeof options.descend === 'string' ? sql` ORDER BY ${sql(options.descend)} DESC` : none }
+  `;
+  const pagination = sql`
     ${ typeof options.limit === 'number' ? sql` LIMIT ${options.limit}` : none }
     ${ typeof options.offset === 'number' ? sql` OFFSET ${options.offset}` : none }
-    ;`;
+  `;
+
+  const items = await sql`
+    SELECT * FROM ${sql(table.name)} ${filter} ${sort} ${pagination};
+  `;
   assert(items instanceof Array);
   items.forEach((item) => {
     validate_item(table, item, false);
   });
+
+  const items_count_rows = await sql`
+    SELECT COUNT(*) FROM ${sql(table.name)} ${filter} ${pagination};
+  `;
+  assert(items_count_rows instanceof Array);
+  const items_count_row = items_count_rows[0];
+  assert(items_count_row instanceof Object);
+  assert(typeof items_count_row.count === 'string');
+  const items_count = Number(items_count_row.count);
+  assert(typeof items_count === 'number');
+  console.log({ items_count });
+
   return items;
 };
 
