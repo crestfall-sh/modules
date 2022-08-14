@@ -246,6 +246,7 @@ const select = async (sql, table, options) => {
     assert(typeof items_count_row.count === 'string');
     const items_count = Number(items_count_row.count);
     assert(typeof items_count === 'number');
+    assert(Number.isFinite(items_count) === true);
     select_response.count = items_count;
   }
 
