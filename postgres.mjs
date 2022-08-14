@@ -234,25 +234,29 @@ const select = async (sql, table, options) => {
     validate_item(table, item, false);
   });
 
-  const items_count_rows = await sql`
-    SELECT COUNT(*) FROM ${sql(table.name)} ${filter} ${pagination};
-  `;
-  assert(items_count_rows instanceof Array);
-  const items_count_row = items_count_rows[0];
-  assert(items_count_row instanceof Object);
-  assert(typeof items_count_row.count === 'string');
-  const items_count = Number(items_count_row.count);
-  assert(typeof items_count === 'number');
-  console.log({ items_count });
+  const select_response = { items, count: null };
 
-  return items;
+  if (options.count === true) {
+    const items_count_rows = await sql`
+      SELECT COUNT(*) FROM ${sql(table.name)} ${filter} ${pagination};
+    `;
+    assert(items_count_rows instanceof Array);
+    const items_count_row = items_count_rows[0];
+    assert(items_count_row instanceof Object);
+    assert(typeof items_count_row.count === 'string');
+    const items_count = Number(items_count_row.count);
+    assert(typeof items_count === 'number');
+    select_response.count = items_count;
+  }
+
+  return select_response;
 };
 
 /**
  * @type {import('./postgres').first<any>}
  */
 const first = async (sql, table, options) => {
-  const items = await select(sql, table, { limit: 1, ...options });
+  const { items } = await select(sql, table, { limit: 1, ...options });
   assert(items instanceof Array);
   const [item] = items;
   if (item instanceof Object) {

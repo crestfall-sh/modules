@@ -141,6 +141,13 @@ process.nextTick(async () => {
     console.log({ items });
   }
 
+  // count test
+  {
+    const { items, count } = await users_table.select({ count: true });
+    console.log({ items, count });
+    assert(items.length === count);
+  }
+
   for (let i = 0, l = list.length; i < l; i += 1) {
     const table = list[i];
     await table.drop_table();
@@ -172,8 +179,8 @@ process.nextTick(async () => {
   }
 
   {
-    const users = await users_table.select({});
-    assert(users.length === 1);
+    const { items } = await users_table.select({});
+    assert(items.length === 1);
     console.log('-- select OK');
   }
   {
@@ -182,28 +189,28 @@ process.nextTick(async () => {
     console.log('-- select OK');
   }
   {
-    const users = await users_table.select({ limit: 100, offset: 0 });
-    assert(users.length === 1);
+    const { items } = await users_table.select({ limit: 100, offset: 0 });
+    assert(items.length === 1);
     console.log('-- select LIMIT OFFSET OK');
   }
   {
-    const users = await users_table.select({ descend: 'created' });
-    assert(users.length === 1);
+    const { items } = await users_table.select({ descend: 'created' });
+    assert(items.length === 1);
     console.log('-- select DESCEND OK');
   }
   {
-    const users = await users_table.select({ where: 'email', eq: 'joshxyzhimself@gmail.com' });
-    assert(users.length === 1);
+    const { items } = await users_table.select({ where: 'email', eq: 'joshxyzhimself@gmail.com' });
+    assert(items.length === 1);
     console.log('-- select WHERE eq OK');
   }
   {
-    const users = await users_table.select({ where: 'email', neq: 'joshxyzhimself@gmail.com' });
-    assert(users.length === 0);
+    const { items } = await users_table.select({ where: 'email', neq: 'joshxyzhimself@gmail.com' });
+    assert(items.length === 0);
     console.log('-- select WHERE neq OK');
   }
   {
-    const users = await users_table.select({ where: 'email_code', is: null });
-    assert(users.length === 1);
+    const { items } = await users_table.select({ where: 'email_code', is: null });
+    assert(items.length === 1);
     console.log('-- select WHERE neq OK');
   }
 
@@ -225,8 +232,8 @@ process.nextTick(async () => {
 
   {
     await users_table.remove(user_id);
-    const users = await users_table.select({});
-    assert(users.length === 0);
+    const { items } = await users_table.select({});
+    assert(items.length === 0);
     console.log('-- remove OK');
   }
 

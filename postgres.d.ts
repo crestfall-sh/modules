@@ -11,6 +11,11 @@ export interface column {
   references?: string;
 }
 
+export interface select_response<T> {
+  items: T[];
+  count: number;
+}
+
 export interface properties {
   sql?: sql;
 }
@@ -19,7 +24,7 @@ export interface methods<T> extends properties {
   drop_table?: () => Promise<void>;
   create_table?: () => Promise<void>;
   insert?: (items: T[]) => Promise<T[]>;
-  select?: (options?: options) => Promise<T[]>;
+  select?: (options?: options) => Promise<select_response<T>>;
   first?: (options?: options) => Promise<T>;
   update?: (item: T) => Promise<T>;
   remove?: (id: number) => Promise<void>;
@@ -39,6 +44,7 @@ export type validate_item<T> = (table: table<T>, item: item, creating: boolean) 
 
 export type insert<T> = (sql: sql, table: table<T>, items: item[]) => Promise<T[]>;
 export interface options {
+  // filter
   where?: string;
   eq?: boolean|string|number;
   neq?: boolean|string|number;
@@ -48,12 +54,16 @@ export interface options {
   lte?: number;
   is?: boolean;
   is_not?: boolean;
+  // sort
   ascend?: string;
   descend?: string;
+  // pagination
   limit?: number;
   offset?: number;
+  // count
+  count?: boolean;
 }
-export type select<T> = (sql: sql, table: table<T>, options: options) => Promise<T[]>;
+export type select<T> = (sql: sql, table: table<T>, options: options) => Promise<select_response<T>>;
 export type first<T> = (sql: sql, table: table<T>, options: options) => Promise<T>;
 export type update<T> = (sql: sql, table: table<T>, item: item) => Promise<T>;
 export type remove<T> = (sql: sql, table: table<T>, id: number) => Promise<void>;
