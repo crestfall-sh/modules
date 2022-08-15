@@ -1,6 +1,12 @@
 import stream from 'stream';
 import * as uws from 'uWebSockets.js';
 
+export class InternalHeaders extends Map {
+  get: (key: string) => string;
+  set: (key: string, value: string|number|boolean) => InternalHeaders;
+};
+export class InternalURLSearchParams extends URLSearchParams {}
+
 export interface cache_control_types {
   no_store: string;
   no_cache: string;
@@ -24,7 +30,7 @@ export interface response {
   error: Error;
 
   status: number;
-  headers: Map<string, string>;
+  headers: InternalHeaders;
 
   file_path: string;
   file_name: string;
@@ -44,7 +50,7 @@ export interface response {
 export interface static_response {
   file_cache?: boolean;
   file_cache_max_age_ms?: number;
-  headers?: Map<string, string>;
+  headers?: InternalHeaders;
 }
 
 export interface cached_file { 
@@ -57,7 +63,7 @@ export interface cached_file {
 export interface request {
   url: string;
   method: string;
-  headers: Map<string, string>;
+  headers: InternalHeaders;
   query: URLSearchParams;
   ip_address: string;
   

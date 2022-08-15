@@ -9,18 +9,44 @@ import mime_types from 'mime-types';
 import { default as uws } from 'uWebSockets.js';
 import { assert } from './assert.mjs';
 
-export const default_headers = new Set([
-  'Host',
-  'Origin',
-  'Accept',
-  'Accept-Encoding',
-  'Content-Type',
-  'User-Agent',
-  'Cookie',
-  'X-Forwarded-Proto',
-  'X-Forwarded-Host',
-  'X-Forwarded-For',
-]);
+/**
+ * @type {import('./uwu').InternalHeaders}
+ * @description complies with RFC 7230 case-insensitive headers
+ * @description https://www.rfc-editor.org/rfc/rfc7230#section-3.2
+ * @description also allows JSON-encoding of our request.header and response.header
+ */
+export class InternalHeaders extends Map {
+  has (key) {
+    return super.has(key.toLocaleLowerCase());
+  }
+  get (key) {
+    return super.get(key.toLocaleLowerCase());
+  }
+  set (key, value) {
+    return super.set(key.toLowerCase(), String(value));
+  }
+  toJSON () {
+    const json = {};
+    super.forEach((value, key) => {
+      json[key] = value;
+    });
+    return json;
+  }
+}
+
+/**
+ * @type {import('./uwu').InternalURLSearchParams}
+ * @description also allows JSON-encoding of our request.query
+ */
+export class InternalURLSearchParams extends URLSearchParams {
+  toJSON () {
+    const json = {};
+    super.forEach((value, key) => {
+      json[key] = value;
+    });
+    return json;
+  }
+}
 
 /**
  * @type {import('./uwu').cache_control_types}
@@ -78,7 +104,7 @@ const apply_middlewares = async (res, middlewares, response, request) => {
     assert(typeof response.file_cache === 'boolean');
     assert(typeof response.file_cache_max_age_ms === 'number');
     assert(typeof response.status === 'number');
-    assert(response.headers instanceof Map);
+    assert(response.headers instanceof InternalHeaders);
     if (typeof response.file_path === 'string') {
       assert(path.isAbsolute(response.file_path) === true);
       try {
@@ -223,8 +249,8 @@ export const use_middlewares = (...middlewares) => {
     const request = {
       url: req.getUrl(),
       method: req.getMethod(),
-      headers: new Map(),
-      query: new URLSearchParams(req.getQuery()),
+      headers: new InternalHeaders(),
+      query: new InternalURLSearchParams(req.getQuery()),
       ip_address: Buffer.from(res.getRemoteAddressAsText()).toString(),
       buffer: null,
       json: null,
@@ -232,10 +258,9 @@ export const use_middlewares = (...middlewares) => {
       error: null,
     };
 
-    default_headers.forEach((header) => {
-      // uWebSockets.js uses lower-case header values
-      // https://unetworking.github.io/uWebSockets.js/generated/interfaces/HttpRequest.html#getHeader
-      request.headers.set(header, req.getHeader(header.toLowerCase()));
+    // https://unetworking.github.io/uWebSockets.js/generated/interfaces/HttpRequest.html#forEach
+    req.forEach((key, value) => {
+      request.headers.set(key, value);
     });
 
     /**
@@ -248,7 +273,7 @@ export const use_middlewares = (...middlewares) => {
       error: null,
 
       status: 200,
-      headers: new Map([['Cache-Control', cache_control_types.no_store]]),
+      headers: new InternalHeaders([['Cache-Control', cache_control_types.no_store]]),
 
       file_path: null,
       file_name: null,

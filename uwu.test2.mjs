@@ -1,8 +1,6 @@
 // @ts-check
 
-import os from 'os';
 import fs from 'fs';
-import url from 'url';
 import path from 'path';
 import * as uwu from './uwu.mjs';
 import { assert } from 'console';

@@ -26,8 +26,6 @@ const test_file = fs.readFileSync(__filename, { encoding: 'utf-8' });
 
 const test = async () => {
 
-  uwu.default_headers.add('X-Custom-Default-Header');
-
   console.log({ __filename, __dirname, __cwd, pid: process.pid, wid: worker_threads.threadId });
 
   const port = 8080;
@@ -39,19 +37,14 @@ const test = async () => {
   app.get('/test-html', uwu.use_middlewares(async (response) => {
     response.html = test_html;
   }));
+  app.get('/test-query', uwu.use_middlewares(async (response, request) => {
+    response.json = request;
+  }));
   app.get('/test-headers', uwu.use_middlewares(async (response, request) => {
-    const headers = {};
-    request.headers.forEach((value, key) => {
-      headers[key] = value;
-    });
-    response.json = { ...request, headers };
+    response.json = request;
   }));
   app.post('/test-json-post', uwu.use_middlewares(async (response, request) => {
-    const headers = {};
-    request.headers.forEach((value, key) => {
-      headers[key] = value;
-    });
-    response.json = { ...request, headers };
+    response.json = request;
   }));
 
   const token = await uwu.serve_http(app, uwu.port_access_types.SHARED, port);
@@ -80,7 +73,7 @@ const test = async () => {
   const body3 = await response3.text();
   assert(body3 === test_file);
 
-  const response4 = await fetch(`${origin}/test-headers`, {
+  const response4 = await fetch(`${origin}/test-query?foo=bar`, {
     method: 'GET',
   });
   assert(response4.status === 200);
@@ -90,10 +83,23 @@ const test = async () => {
   const body4 = await response4.json();
   assert(body4 instanceof Object);
   assert(body4.method === 'get');
-  assert(body4.headers instanceof Object);
-  assert(body4.headers.Host === 'localhost:8080');
+  assert(body4.query instanceof Object);
+  assert(body4.query.foo === 'bar');
 
-  const response5 = await fetch(`${origin}/test-json-post`, {
+  const response5 = await fetch(`${origin}/test-headers`, {
+    method: 'GET',
+  });
+  assert(response5.status === 200);
+  /**
+   * @type {any}
+   */
+  const body5 = await response5.json();
+  assert(body5 instanceof Object);
+  assert(body5.method === 'get');
+  assert(body5.headers instanceof Object);
+  assert(body5.headers.host === 'localhost:8080');
+
+  const response6 = await fetch(`${origin}/test-json-post`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ foo: 'bar' }),
@@ -101,12 +107,12 @@ const test = async () => {
   /**
    * @type {any}
    */
-  const body5 = await response5.json();
-  assert(response5.status === 200);
-  assert(body5 instanceof Object);
-  assert(body5.method === 'post');
-  assert(body5.json instanceof Object);
-  assert(body5.json.foo === 'bar');
+  const body6 = await response6.json();
+  assert(response6.status === 200);
+  assert(body6 instanceof Object);
+  assert(body6.method === 'post');
+  assert(body6.json instanceof Object);
+  assert(body6.json.foo === 'bar');
 
   // avoid dropping requests from other threads
   await proc.sleep(500);
