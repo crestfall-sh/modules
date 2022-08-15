@@ -174,6 +174,9 @@ const insert = async (sql, table, items) => {
     validate_item(table, created_item, false);
     Object.assign(item, created_item);
   });
+  if (table.on_insert instanceof Function) {
+    process.nextTick(table.on_insert, items);
+  }
   return items;
 };
 
@@ -233,6 +236,21 @@ const select = async (sql, table, options) => {
   items.forEach((item) => {
     validate_item(table, item, false);
   });
+  for (let i = 0, l = items.length; i < l; i += 1) {
+    const item = items[i];
+    // optional hydration of items
+    if (options.hydrate === true) {
+      if (table.hydrate instanceof Function) {
+        await table.hydrate(item);
+      }
+    }
+    // optional cleanup of items
+    if (options.cleanup === true) {
+      if (table.cleanup instanceof Function) {
+        await table.cleanup(item);
+      }
+    }
+  }
 
   const select_response = { items, count: null, explain: null };
 
@@ -290,6 +308,9 @@ const update = async (sql, table, item) => {
   const [updated_item] = updated_items;
   validate_item(table, updated_item, false);
   Object.assign(item, updated_item);
+  if (table.on_update instanceof Function) {
+    process.nextTick(table.on_update, item);
+  }
   return item;
 };
 
@@ -302,6 +323,9 @@ const remove = async (sql, table, id) => {
   assert(table.columns instanceof Array);
   assert(typeof id === 'number');
   await sql`DELETE FROM ${sql(table.name)} WHERE "id" = ${id};`;
+  if (table.on_remove instanceof Function) {
+    process.nextTick(table.on_remove, id);
+  }
   return null;
 };
 

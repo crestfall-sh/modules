@@ -33,6 +33,23 @@ process.nextTick(async () => {
       { name: 'email_verified', type: 'boolean' },
       { name: 'created', type: 'timestamp' },
     ],
+    hydrate: async (item) => {
+      const { items: user_roles } = await user_roles_table.select({ where: 'user_id', eq: item.id });
+      item.user_roles = user_roles;
+      return item;
+    },
+    cleanup: async (item) => {
+      return item;
+    },
+    on_insert: async (items) => {
+      console.log('on_insert', items);
+    },
+    on_update: async (item) => {
+      console.log('on_update', item);
+    },
+    on_remove: async (id) => {
+      console.log('on_remove', id);
+    },
   };
 
   /**
@@ -247,8 +264,12 @@ process.nextTick(async () => {
   }
 
   {
+    console.log('-- removing');
     await users_table.remove(user_id);
+    console.log('-- removed');
+    console.log('-- selecting');
     const { items } = await users_table.select({});
+    console.log('-- selected');
     assert(items.length === 0);
     console.log('-- remove OK');
   }

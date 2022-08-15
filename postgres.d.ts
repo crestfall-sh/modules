@@ -35,6 +35,11 @@ export interface table<T> extends methods<T> {
   name: string; // sql-friendly name, snake-case
   name_alt: string; // url-friendly name, kebab-case
   columns: column[];
+  hydrate?: (item: T) => Promise<T>;
+  cleanup?: (item: T) => Promise<T>;
+  on_insert?: (items: T[]) => Promise<void>; // deferred to process.nextTick, wrap with try-catch
+  on_update?: (item: T) => Promise<void>; // deferred to process.nextTick, wrap with try-catch
+  on_remove?: (id: number) => Promise<void>; // deferred to process.nextTick, wrap with try-catch
 }
 
 export type item = Record<string, any>;
@@ -65,6 +70,10 @@ export interface options {
   count?: boolean;
   // explain
   explain?: boolean;
+  // hydrate
+  hydrate?: boolean;
+  // cleanup
+  cleanup?: boolean;
 }
 export type select<T> = (sql: sql, table: table<T>, options: options) => Promise<select_response<T>>;
 export type first<T> = (sql: sql, table: table<T>, options: options) => Promise<T>;

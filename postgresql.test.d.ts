@@ -4,6 +4,7 @@ export interface user {
   email_code: string;
   email_verified: boolean;
   created: string;
+  user_roles?: user_role[];
 }
 export interface role {
   id: number;
