@@ -17,10 +17,10 @@ import { assert } from './assert.mjs';
  */
 export class InternalHeaders extends Map {
   has (key) {
-    return super.has(key.toLocaleLowerCase());
+    return super.has(key.toLowerCase());
   }
   get (key) {
-    return super.get(key.toLocaleLowerCase());
+    return super.get(key.toLowerCase());
   }
   set (key, value) {
     return super.set(key.toLowerCase(), String(value));
