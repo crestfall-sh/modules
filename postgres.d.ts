@@ -24,10 +24,10 @@ export interface properties {
 export interface methods<T> extends properties {
   drop_table?: () => Promise<void>;
   create_table?: () => Promise<void>;
-  insert?: (items: T[]) => Promise<T[]>;
-  select?: (options?: options) => Promise<select_response<T>>;
-  first?: (options?: options) => Promise<T>;
-  update?: (item: T) => Promise<T>;
+  insert?: (items: T[], options?: insert_options) => Promise<T[]>;
+  select?: (options: select_options) => Promise<select_response<T>>;
+  first?: (options: select_options) => Promise<T>;
+  update?: (item: T, options?: update_options) => Promise<T>;
   remove?: (id: number) => Promise<void>;
 }
 
@@ -37,9 +37,12 @@ export interface table<T> extends methods<T> {
   columns: column[];
   hydrate?: (item: T) => Promise<T>;
   cleanup?: (item: T) => Promise<T>;
-  on_insert?: (items: T[]) => Promise<void>; // deferred to process.nextTick, wrap with try-catch
-  on_update?: (item: T) => Promise<void>; // deferred to process.nextTick, wrap with try-catch
-  on_remove?: (id: number) => Promise<void>; // deferred to process.nextTick, wrap with try-catch
+  // deferred to process.nextTick, wrap with try-catch:
+  on_insert?: (items: T[]) => Promise<void>;
+  // deferred to process.nextTick, wrap with try-catch:
+  on_update?: (item: T) => Promise<void>;
+  // deferred to process.nextTick, wrap with try-catch:
+  on_remove?: (id: number) => Promise<void>;
 }
 
 export type item = Record<string, any>;
@@ -48,8 +51,14 @@ export type drop_table<T> = (sql: sql, table: table<T>) => Promise<void>;
 export type create_table<T> = (sql: sql, table: table<T>) => Promise<void>;
 export type validate_item<T> = (table: table<T>, item: item, creating: boolean) => void;
 
-export type insert<T> = (sql: sql, table: table<T>, items: item[]) => Promise<T[]>;
-export interface options {
+export interface insert_options {
+  // hydrate
+  hydrate?: boolean;
+  // cleanup
+  cleanup?: boolean;
+}
+export type insert<T> = (sql: sql, table: table<T>, items: item[], options?: insert_options) => Promise<T[]>;
+export interface select_options {
   // filter
   where?: string;
   eq?: boolean|string|number;
@@ -75,9 +84,15 @@ export interface options {
   // cleanup
   cleanup?: boolean;
 }
-export type select<T> = (sql: sql, table: table<T>, options: options) => Promise<select_response<T>>;
-export type first<T> = (sql: sql, table: table<T>, options: options) => Promise<T>;
-export type update<T> = (sql: sql, table: table<T>, item: item) => Promise<T>;
+export type select<T> = (sql: sql, table: table<T>, options: select_options) => Promise<select_response<T>>;
+export type first<T> = (sql: sql, table: table<T>, options: select_options) => Promise<T>;
+export interface update_options {
+  // hydrate
+  hydrate?: boolean;
+  // cleanup
+  cleanup?: boolean;
+}
+export type update<T> = (sql: sql, table: table<T>, item: item, options?: update_options) => Promise<T>;
 export type remove<T> = (sql: sql, table: table<T>, id: number) => Promise<void>;
 
 export type assign_table_methods = (sql: sql, table: table<any>) => void;

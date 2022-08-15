@@ -2,6 +2,11 @@
 
 ## changelog
 
+### v1.18.7
+
+- update table.insert, add options.hydrate and options.cleanup.
+- update table.update, add options.hydrate and options.cleanup.
+
 ### v1.18.6
 
 Item insert / update / remove events. Item hydrate and cleanup.

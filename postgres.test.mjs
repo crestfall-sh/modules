@@ -34,11 +34,14 @@ process.nextTick(async () => {
       { name: 'created', type: 'timestamp' },
     ],
     hydrate: async (item) => {
+      console.log('hydrate', item);
       const { items: user_roles } = await user_roles_table.select({ where: 'user_id', eq: item.id });
       item.user_roles = user_roles;
       return item;
     },
     cleanup: async (item) => {
+      console.log('cleanup', item);
+      item.email_code = null;
       return item;
     },
     on_insert: async (items) => {
@@ -95,7 +98,7 @@ process.nextTick(async () => {
     const alice = {
       id: null,
       email: 'alice@example.com',
-      email_code: null,
+      email_code: crypto.randomBytes(32).toString('hex'),
       email_verified: false,
       created: luxon.DateTime.now().toISO(),
     };
@@ -105,11 +108,11 @@ process.nextTick(async () => {
     const bob = {
       id: null,
       email: 'bob@example.com',
-      email_code: null,
+      email_code: crypto.randomBytes(32).toString('hex'),
       email_verified: false,
       created: luxon.DateTime.now().toISO(),
     };
-    await users_table.insert([alice, bob]);
+    await users_table.insert([alice, bob], { hydrate: true, cleanup: true });
     /**
      * @type {role}
      */

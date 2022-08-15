@@ -157,7 +157,7 @@ const validate_item = (table, item, creating) => {
 /**
  * @type {import('./postgres').insert<any>}
  */
-const insert = async (sql, table, items) => {
+const insert = async (sql, table, items, options) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
@@ -169,11 +169,24 @@ const insert = async (sql, table, items) => {
   const created_items = await sql`INSERT INTO ${sql(table.name)} ${sql(items, ...column_names)} RETURNING *`;
   assert(created_items instanceof Array);
   assert(items.length === created_items.length);
-  items.forEach((item, index) => {
-    const created_item = created_items[index];
+  for (let i = 0, l = items.length; i < l; i += 1) {
+    const item = items[i];
+    const created_item = created_items[i];
     validate_item(table, created_item, false);
     Object.assign(item, created_item);
-  });
+    if (options instanceof Object) {
+      if (options.hydrate === true) {
+        if (table.hydrate instanceof Function) {
+          await table.hydrate(item);
+        }
+      }
+      if (options.cleanup === true) {
+        if (table.cleanup instanceof Function) {
+          await table.cleanup(item);
+        }
+      }
+    }
+  }
   if (table.on_insert instanceof Function) {
     process.nextTick(table.on_insert, items);
   }
@@ -233,11 +246,9 @@ const select = async (sql, table, options) => {
     SELECT * FROM ${sql(table.name)} ${filter} ${sort} ${pagination};
   `;
   assert(items instanceof Array);
-  items.forEach((item) => {
-    validate_item(table, item, false);
-  });
   for (let i = 0, l = items.length; i < l; i += 1) {
     const item = items[i];
+    validate_item(table, item, false);
     // optional hydration of items
     if (options.hydrate === true) {
       if (table.hydrate instanceof Function) {
@@ -296,7 +307,7 @@ const first = async (sql, table, options) => {
 /**
  * @type {import('./postgres').update<any>}
  */
-const update = async (sql, table, item) => {
+const update = async (sql, table, item, options) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
   assert(table.columns instanceof Array);
@@ -308,6 +319,18 @@ const update = async (sql, table, item) => {
   const [updated_item] = updated_items;
   validate_item(table, updated_item, false);
   Object.assign(item, updated_item);
+  if (options instanceof Object) {
+    if (options.hydrate === true) {
+      if (table.hydrate instanceof Function) {
+        await table.hydrate(item);
+      }
+    }
+    if (options.cleanup === true) {
+      if (table.cleanup instanceof Function) {
+        await table.cleanup(item);
+      }
+    }
+  }
   if (table.on_update instanceof Function) {
     process.nextTick(table.on_update, item);
   }
@@ -346,10 +369,10 @@ export const assign_table_methods = (sql, table) => {
   const methods = {
     drop_table: () => drop_table(sql, table),
     create_table: () => create_table(sql, table),
-    insert: (items) => insert(sql, table, items),
+    insert: (items, options) => insert(sql, table, items, options),
     select: (options) => select(sql, table, options),
     first: (options) => first(sql, table, options),
-    update: (item) => update(sql, table, item),
+    update: (item, options) => update(sql, table, item, options),
     remove: (id) => remove(sql, table, id),
   };
 
