@@ -55,8 +55,8 @@ const drop_table = async (sql, table) => {
 const create_table = async (sql, table) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
-  assert(table.columns instanceof Array);
-  const columns = table.columns.map((column) => {
+  assert(table.columns instanceof Object);
+  const columns = Object.values(table.columns).map((column) => {
     assert(column instanceof Object);
     assert(typeof column.name === 'string');
     assert(typeof column.type === 'string');
@@ -90,9 +90,9 @@ const create_table = async (sql, table) => {
 const validate_item = (table, item, creating) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
-  assert(table.columns instanceof Array);
+  assert(table.columns instanceof Object);
   assert(item instanceof Object);
-  table.columns.forEach((column) => {
+  Object.values(table.columns).forEach((column) => {
     assert(column instanceof Object);
     assert(typeof column.name === 'string');
     assert(typeof column.type === 'string');
@@ -160,12 +160,12 @@ const validate_item = (table, item, creating) => {
 const insert = async (sql, table, items, options) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
-  assert(table.columns instanceof Array);
+  assert(table.columns instanceof Object);
   assert(items instanceof Array);
   items.forEach((item) => {
     validate_item(table, item, true);
   });
-  const column_names = table.columns.filter((column) => column.type !== 'serial').map((column) => column.name);
+  const column_names = Object.values(table.columns).filter((column) => column.type !== 'serial').map((column) => column.name);
   const created_items = await sql`INSERT INTO ${sql(table.name)} ${sql(items, ...column_names)} RETURNING *`;
   assert(created_items instanceof Array);
   assert(items.length === created_items.length);
@@ -199,10 +199,11 @@ const insert = async (sql, table, items, options) => {
 const select = async (sql, table, options) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
+  assert(table.columns instanceof Object);
   assert(options instanceof Object);
   if (typeof options.where === 'string') {
     // left-hand operand, column, must exist.
-    const existing = table.columns.find((column) => column.name === options.where);
+    const existing = Object.values(table.columns).find((column) => column.name === options.where);
     assert(existing instanceof Object);
     // right-hand operand must only be one value, not zero, not more than one.
     const operands = [options.eq, options.neq, options.gt, options.gte, options.lt, options.lte, options.is, options.is_not];
@@ -310,9 +311,9 @@ const first = async (sql, table, options) => {
 const update = async (sql, table, item, options) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
-  assert(table.columns instanceof Array);
+  assert(table.columns instanceof Object);
   validate_item(table, item, false);
-  const column_names = table.columns.filter((column) => column.type !== 'serial').map((column) => column.name);
+  const column_names = Object.values(table.columns).filter((column) => column.type !== 'serial').map((column) => column.name);
   const updated_items = await sql`UPDATE ${sql(table.name)} SET ${sql(item, ...column_names)} WHERE "id" = ${item.id} RETURNING *`;
   assert(updated_items instanceof Array);
   assert(updated_items.length === 1);
@@ -343,7 +344,7 @@ const update = async (sql, table, item, options) => {
 const remove = async (sql, table, id) => {
   assert(table instanceof Object);
   assert(typeof table.name === 'string');
-  assert(table.columns instanceof Array);
+  assert(table.columns instanceof Object);
   assert(typeof id === 'number');
   await sql`DELETE FROM ${sql(table.name)} WHERE "id" = ${id};`;
   if (table.on_remove instanceof Function) {
@@ -353,9 +354,9 @@ const remove = async (sql, table, id) => {
 };
 
 /**
- * @type {import('./postgres').assign_table_methods}
+ * @type {import('./postgres').bind_methods}
  */
-export const assign_table_methods = (sql, table) => {
+export const bind_methods = (sql, table) => {
 
   /**
    * @type {import('./postgres').properties}

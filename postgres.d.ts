@@ -11,8 +11,8 @@ export interface column {
   references?: string;
 }
 
-export interface select_response<T> {
-  items: T[];
+export interface select_response<Item> {
+  items: Item[];
   count: number;
   explain: Record<string, string>[];
 }
@@ -21,35 +21,39 @@ export interface properties {
   sql?: sql;
 }
 
-export interface methods<T> extends properties {
+export interface methods<Item> extends properties {
   drop_table?: () => Promise<void>;
   create_table?: () => Promise<void>;
-  insert?: (items: T[], options?: insert_options) => Promise<T[]>;
-  select?: (options: select_options) => Promise<select_response<T>>;
-  first?: (options: select_options) => Promise<T>;
-  update?: (item: T, options?: update_options) => Promise<T>;
+  insert?: (items: Item[], options?: insert_options) => Promise<Item[]>;
+  select?: (options: select_options) => Promise<select_response<Item>>;
+  first?: (options: select_options) => Promise<Item>;
+  update?: (item: Item, options?: update_options) => Promise<Item>;
   remove?: (id: number) => Promise<void>;
 }
 
-export interface table<T> extends methods<T> {
+// https://stackoverflow.com/a/49579497/19804714
+export type RequiredKeys<T> = { [K in keyof T]-?: ({} extends { [P in K]: T[K] } ? never : K) }[keyof T];
+export type OptionalKeys<T> = { [K in keyof T]-?: ({} extends { [P in K]: T[K] } ? K : never) }[keyof T];
+
+export interface table<Item> extends methods<Item> {
   name: string; // sql-friendly name, snake-case
   name_alt: string; // url-friendly name, kebab-case
-  columns: column[];
-  hydrate?: (item: T) => Promise<T>;
-  cleanup?: (item: T) => Promise<T>;
+  columns: Record<RequiredKeys<Item>, column>;
+  hydrate?: (item: Item) => Promise<Item>;
+  cleanup?: (item: Item) => Promise<Item>;
   // deferred to process.nextTick, wrap with try-catch:
-  on_insert?: (items: T[]) => Promise<void>;
+  on_insert?: (items: Item[]) => Promise<void>;
   // deferred to process.nextTick, wrap with try-catch:
-  on_update?: (item: T) => Promise<void>;
+  on_update?: (item: Item) => Promise<void>;
   // deferred to process.nextTick, wrap with try-catch:
   on_remove?: (id: number) => Promise<void>;
 }
 
-export type item = Record<string, any>;
+export type ItemBase = Record<string, any>;
 
-export type drop_table<T> = (sql: sql, table: table<T>) => Promise<void>;
-export type create_table<T> = (sql: sql, table: table<T>) => Promise<void>;
-export type validate_item<T> = (table: table<T>, item: item, creating: boolean) => void;
+export type drop_table<Item> = (sql: sql, table: table<Item>) => Promise<void>;
+export type create_table<Item> = (sql: sql, table: table<Item>) => Promise<void>;
+export type validate_item<Item> = (table: table<Item>, item: ItemBase, creating: boolean) => void;
 
 export interface insert_options {
   // hydrate
@@ -57,7 +61,7 @@ export interface insert_options {
   // cleanup
   cleanup?: boolean;
 }
-export type insert<T> = (sql: sql, table: table<T>, items: item[], options?: insert_options) => Promise<T[]>;
+export type insert<Item> = (sql: sql, table: table<Item>, items: ItemBase[], options?: insert_options) => Promise<Item[]>;
 export interface select_options {
   // filter
   where?: string;
@@ -84,19 +88,19 @@ export interface select_options {
   // cleanup
   cleanup?: boolean;
 }
-export type select<T> = (sql: sql, table: table<T>, options: select_options) => Promise<select_response<T>>;
-export type first<T> = (sql: sql, table: table<T>, options: select_options) => Promise<T>;
+export type select<Item> = (sql: sql, table: table<Item>, options: select_options) => Promise<select_response<Item>>;
+export type first<Item> = (sql: sql, table: table<Item>, options: select_options) => Promise<Item>;
 export interface update_options {
   // hydrate
   hydrate?: boolean;
   // cleanup
   cleanup?: boolean;
 }
-export type update<T> = (sql: sql, table: table<T>, item: item, options?: update_options) => Promise<T>;
-export type remove<T> = (sql: sql, table: table<T>, id: number) => Promise<void>;
+export type update<Item> = (sql: sql, table: table<Item>, item: ItemBase, options?: update_options) => Promise<Item>;
+export type remove<Item> = (sql: sql, table: table<Item>, id: number) => Promise<void>;
 
-export type assign_table_methods = (sql: sql, table: table<any>) => void;
-export const assign_table_methods: assign_table_methods;
+export type bind_methods = (sql: sql, table: table<any>) => void;
+export const bind_methods: bind_methods;
 
 export type connect = (host: string, port: number, username: string, password: string, database: string) => sql;
 export const connect: connect;

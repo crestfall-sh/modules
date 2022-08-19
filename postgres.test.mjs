@@ -26,13 +26,13 @@ process.nextTick(async () => {
   const users_table = {
     name: 'users',
     name_alt: 'users',
-    columns: [
-      { name: 'id', type: 'serial', primary: true },
-      { name: 'email', type: 'text' },
-      { name: 'email_code', type: 'text', nullable: true },
-      { name: 'email_verified', type: 'boolean' },
-      { name: 'created', type: 'timestamp' },
-    ],
+    columns: {
+      id: { name: 'id', type: 'serial', primary: true },
+      email: { name: 'email', type: 'text' },
+      email_code: { name: 'email_code', type: 'text', nullable: true },
+      email_verified: { name: 'email_verified', type: 'boolean' },
+      created: { name: 'created', type: 'timestamp' },
+    },
     hydrate: async (item) => {
       console.log('hydrate', item);
       const { items: user_roles } = await user_roles_table.select({ where: 'user_id', eq: item.id });
@@ -61,11 +61,11 @@ process.nextTick(async () => {
   const roles_table = {
     name: 'roles',
     name_alt: 'roles',
-    columns: [
-      { name: 'id', type: 'serial', primary: true },
-      { name: 'name', type: 'text', unique: true },
-      { name: 'permissions', type: 'text[]' },
-    ],
+    columns: {
+      id: { name: 'id', type: 'serial', primary: true },
+      name: { name: 'name', type: 'text', unique: true },
+      permissions: { name: 'permissions', type: 'text[]' },
+    },
   };
 
   /**
@@ -74,18 +74,18 @@ process.nextTick(async () => {
   const user_roles_table = {
     name: 'user_roles',
     name_alt: 'user_roles',
-    columns: [
-      { name: 'id', type: 'serial', primary: true },
-      { name: 'user_id', type: 'integer', references: 'users' },
-      { name: 'role_id', type: 'integer', references: 'roles' },
-    ],
+    columns: {
+      id: { name: 'id', type: 'serial', primary: true },
+      user_id: { name: 'user_id', type: 'integer', references: 'users' },
+      role_id: { name: 'role_id', type: 'integer', references: 'roles' },
+    },
   };
 
   const list = [users_table, roles_table, user_roles_table];
 
   for (let i = 0, l = list.length; i < l; i += 1) {
     const table = list[i];
-    postgres.assign_table_methods(sql, table);
+    postgres.bind_methods(sql, table);
     await table.drop_table();
     await table.create_table();
   }
