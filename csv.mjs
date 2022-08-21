@@ -96,6 +96,7 @@ export const read_csv = (file_path, high_water_mark) => {
           const column_value = data.subarray(column_start, column_end).toString();
           columns.push(column_value);
           column_start = null;
+          column_enclosed = false;
         }
         if (char_code === cr) {
           const next_char_code = data[i + 1];
@@ -107,6 +108,7 @@ export const read_csv = (file_path, high_water_mark) => {
             const column_value = data.subarray(column_start, column_end).toString();
             columns.push(column_value);
             column_start = null;
+            column_enclosed = false;
             const row_end = i;
             const row_value = data.subarray(row_start, row_end).toString();
             const row = { value: row_value, columns };
