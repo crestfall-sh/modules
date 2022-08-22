@@ -12,7 +12,7 @@ export interface column {
   type: string;
   type_alt?: string; // non-postgresql, metadata, for automation
   category?: string; // non-postgresql, metadata, for automation
-  sub_category?: string; // non-postgresql, metadata, for automation
+  category_alt?: string; // non-postgresql, metadata, for automation
   primary?: boolean;
   unique?: boolean;
   nullable?: boolean;
