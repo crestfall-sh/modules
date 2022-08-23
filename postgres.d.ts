@@ -8,11 +8,10 @@ export type sql = postgres.Sql<{ date: string }>;
 // type_alt: input / select / date / datetime-local; html input element type
 export interface column {
   name: string;
-  name_alt?: string; // non-postgresql, metadata, for automation
   type: string;
   type_alt?: string; // non-postgresql, metadata, for automation
   category?: string; // non-postgresql, metadata, for automation
-  category_alt?: string; // non-postgresql, metadata, for automation
+  caption?: string; // non-postgresql, metadata, for automation
   primary?: boolean;
   unique?: boolean;
   nullable?: boolean;
