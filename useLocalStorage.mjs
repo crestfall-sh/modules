@@ -5,7 +5,9 @@ import { assert } from './assert.mjs';
 
 /**
  * @template T
- * @type {import('./useLocalStorage').useLocalStorage<T>}
+ * @param {string} key
+ * @param {T} default_value
+ * @returns {[T, React.Dispatch<T>]}
  * @description uses LocalStorage API + JSON.stringify and JSON.parse
  * @description https://blog.logrocket.com/using-localstorage-react-hooks/
  */
