@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { assert } from './assert.mjs';
 
 /**
+ * @template T
+ * @type {import('./useLocalStorage').useLocalStorage<T>}
  * @description uses LocalStorage API + JSON.stringify and JSON.parse
  * @description https://blog.logrocket.com/using-localstorage-react-hooks/
  */
