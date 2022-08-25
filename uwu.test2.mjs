@@ -15,7 +15,7 @@ process.nextTick(async () => {
   const origin = `http://localhost:${port}`;
   const app = uwu.uws.App({});
 
-  app.get('/test-stream', uwu.use_middlewares(async (response) => {
+  app.get('/test-stream', uwu.use_middleware(async (response) => {
     response.stream = fs.createReadStream(__file);
     response.file_path = __file;
   }));

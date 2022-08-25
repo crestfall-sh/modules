@@ -34,16 +34,16 @@ const test = async () => {
 
   uwu.use_static_middleware(app, '/test-static/', path.join(__dirname, '/'), { file_cache: false });
   uwu.use_static_middleware(app, '/test-cached-static/', path.join(__dirname, '/'), { file_cache: true });
-  app.get('/test-html', uwu.use_middlewares(async (response) => {
+  app.get('/test-html', uwu.use_middleware(async (response) => {
     response.html = test_html;
   }));
-  app.get('/test-query', uwu.use_middlewares(async (response, request) => {
+  app.get('/test-query', uwu.use_middleware(async (response, request) => {
     response.json = request;
   }));
-  app.get('/test-headers', uwu.use_middlewares(async (response, request) => {
+  app.get('/test-headers', uwu.use_middleware(async (response, request) => {
     response.json = request;
   }));
-  app.post('/test-json-post', uwu.use_middlewares(async (response, request) => {
+  app.post('/test-json-post', uwu.use_middleware(async (response, request) => {
     response.json = request;
   }));
 
@@ -83,8 +83,8 @@ const test = async () => {
   const body4 = await response4.json();
   assert(body4 instanceof Object);
   assert(body4.method === 'get');
-  assert(body4.query instanceof Object);
-  assert(body4.query.foo === 'bar');
+  assert(body4.search_params instanceof Object);
+  assert(body4.search_params.foo === 'bar');
 
   const response5 = await fetch(`${origin}/test-headers`, {
     method: 'GET',

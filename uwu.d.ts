@@ -64,7 +64,8 @@ export interface request {
   url: string;
   method: string;
   headers: InternalHeaders;
-  query: URLSearchParams;
+  pathname_params: string[];
+  search_params: URLSearchParams;
   ip_address: string;
   
   buffer: Buffer;
@@ -75,11 +76,20 @@ export interface request {
 }
 
 export type middleware = (response: response, request: request) => void;
+
+export interface middleware_options {
+  pathname_parameters: number;
+}
+
 export type apply_middlewares = (res: uws.HttpResponse, middlewares: middleware[], response: response, request: request) => void;
+
 export type uws_handler = (res: uws.HttpResponse, req: uws.HttpRequest) => void;
 
-export type use_middlewares = (...middlewares: middleware[]) => uws_handler;
+export type use_middlewares = (options: middleware_options, ...middlewares: middleware[]) => uws_handler;
 export const use_middlewares: use_middlewares;
+
+export type use_middleware = (middleware: middleware, options?: middleware_options) => uws_handler;
+export const use_middleware: use_middleware;
 
 export type use_static_middleware = (app: uws.TemplatedApp, url_pathname: string, local_pathname: string, static_response: static_response) => void;
 export const use_static_middleware: use_static_middleware;

@@ -220,11 +220,10 @@ const apply_middlewares = async (res, middlewares, response, request) => {
   }
 };
 
-
 /**
  * @type {import('./uwu').use_middlewares}
  */
-export const use_middlewares = (...middlewares) => {
+export const use_middlewares = (options, ...middlewares) => {
 
   middlewares.forEach((middleware) => {
     assert(middleware instanceof Function);
@@ -250,7 +249,8 @@ export const use_middlewares = (...middlewares) => {
       url: req.getUrl(),
       method: req.getMethod(),
       headers: new InternalHeaders(),
-      query: new InternalURLSearchParams(req.getQuery()),
+      pathname_params: [],
+      search_params: new InternalURLSearchParams(req.getQuery()),
       ip_address: Buffer.from(res.getRemoteAddressAsText()).toString(),
       buffer: null,
       json: null,
@@ -262,6 +262,17 @@ export const use_middlewares = (...middlewares) => {
     req.forEach((key, value) => {
       request.headers.set(key, value);
     });
+
+    if (options instanceof Object) {
+      if (typeof options.pathname_parameters === 'number') {
+        assert(Number.isFinite(options.pathname_parameters) === true);
+        assert(Number.isInteger(options.pathname_parameters) === true);
+        assert(options.pathname_parameters > 0);
+        for (let i = 0, l = options.pathname_parameters; i < l; i += 1) {
+          request.pathname_params.push(req.getParameter(i));
+        }
+      }
+    }
 
     /**
      * @type {import('./uwu').response}
@@ -317,6 +328,13 @@ export const use_middlewares = (...middlewares) => {
   return uws_handler;
 };
 
+/**
+ * @type {import('./uwu').use_middleware}
+ */
+export const use_middleware = (middleware, options) => {
+  return use_middlewares(options, middleware);
+};
+
 
 /**
  * @type {import('./uwu').use_static_middleware}
@@ -336,7 +354,7 @@ export const use_static_middleware = (app, url_pathname, local_pathname, static_
 
   assert(static_response === undefined || static_response instanceof Object);
 
-  const core_static_middleware = use_middlewares(async (response, request) => {
+  const core_static_middleware = use_middleware(async (response, request) => {
     response.file_path = request.url.replace(url_pathname, local_pathname);
     if (static_response instanceof Object) {
       Object.assign(response, static_response);
