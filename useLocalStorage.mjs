@@ -1,6 +1,6 @@
 // @ts-check
 
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { assert } from './assert.mjs';
 
 /**
@@ -16,8 +16,8 @@ export const useLocalStorage = (key, default_value) => {
   /**
    * @type {[T, React.Dispatch<T>]}
    */
-  const [value, set_value] = useState(JSON.parse(localStorage.getItem(key)) || default_value);
-  useEffect(() => {
+  const [value, set_value] = React.useState(JSON.parse(localStorage.getItem(key)) || default_value);
+  React.useEffect(() => {
     localStorage.setItem(key, JSON.stringify(value));
   }, [key, value]);
   return [value, set_value];

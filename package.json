@@ -1,6 +1,6 @@
 {
   "name": "modules",
-  "version": "1.21.0",
+  "version": "1.21.1",
   "description": " Modules for better workflows. ",
   "author": "joshxyzhimself <joshxyzhimself@gmail.com>",
   "license": "MIT",
@@ -23,5 +23,8 @@
     "eslint": "^8.3.0",
     "eslint-plugin-react": "^7.26.1",
     "eslint-plugin-react-hooks": "^4.2.0"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
   }
 }
