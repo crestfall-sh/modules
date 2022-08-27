@@ -19,6 +19,18 @@ export const useLocalStorage = (key, default_value) => {
   const [value, set_value] = React.useState(JSON.parse(localStorage.getItem(key)) || default_value);
   React.useEffect(() => {
     localStorage.setItem(key, JSON.stringify(value));
-  }, [key, value]);
+    /**
+     * @param {StorageEvent} e
+     */
+    const storage_event_listener = (e) => {
+      if (e.key === key) {
+        set_value(JSON.parse(localStorage.getItem(key)) || default_value);
+      }
+    };
+    window.addEventListener('storage', storage_event_listener);
+    return () => {
+      window.removeEventListener('storage', storage_event_listener);
+    };
+  }, [key, default_value, value]);
   return [value, set_value];
 };
