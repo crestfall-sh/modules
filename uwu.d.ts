@@ -65,7 +65,7 @@ export interface request {
   method: string;
   headers: InternalHeaders;
   pathname_params: string[];
-  search_params: URLSearchParams;
+  search_params: InternalURLSearchParams;
   ip_address: string;
   
   buffer: Buffer;
