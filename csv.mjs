@@ -13,17 +13,23 @@ import { EventEmitter } from 'events';
 const cr = '\r'.charCodeAt(0);
 const lf = '\n'.charCodeAt(0);
 const double_quote = '"'.charCodeAt(0);
-const comma = ','.charCodeAt(0);
+const comma_char_code = ','.charCodeAt(0);
 
 /**
- * @param {string} file_path
- * @param {number} high_water_mark
+ * @param {string} file_path - csv absolute file path
+ * @param {number} high_water_mark - amount of bytes to buffer
+ * @param {string} [delimiter] defaults to comma
  * @return {import('./csv').emitter & EventEmitter}
  */
-export const read_csv = (file_path, high_water_mark) => {
+export const read_csv = (file_path, high_water_mark, delimiter) => {
   assert(typeof file_path === 'string');
   assert(typeof high_water_mark === 'number');
+  if (typeof delimiter === 'string') {
+    assert(delimiter.length === 1);
+  }
   assert(fs.existsSync(file_path) === true);
+
+  const delimiter_char_code = typeof delimiter === 'string' ? delimiter.charCodeAt(0) : comma_char_code;
 
   const emitter = new EventEmitter();
 
@@ -90,7 +96,7 @@ export const read_csv = (file_path, high_water_mark) => {
       }
 
       if (inside_double_quotes === false) {
-        if (char_code === comma) {
+        if (char_code === delimiter_char_code) {
           if (column_enclosed === true) {
             column_start += 1;
           }
