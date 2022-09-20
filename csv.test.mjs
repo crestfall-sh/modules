@@ -44,18 +44,27 @@ process.nextTick(async () => {
   const __cwd = process.cwd();
 
   // test enclosed columns
-  const __csv_3166 = path.join(__cwd, '/3166.csv');
-  const __csv_3166_emitter = test(__csv_3166, 250);
-  await new Promise((resolve) => __csv_3166_emitter.once('end', resolve));
+  console.log('__csv_3166_1');
+  const __csv_3166_1 = path.join(__cwd, '/3166-1.csv');
+  const __csv_3166_1_emitter = test(__csv_3166_1, 250);
+  await new Promise((resolve) => __csv_3166_1_emitter.once('end', resolve));
 
   // test unenclosed columns
+  console.log('__csv_3166_2');
   const __csv_3166_2 = path.join(__cwd, '/3166-2.csv');
   const __csv_3166_2_emitter = test(__csv_3166_2, 3);
   await new Promise((resolve) => __csv_3166_2_emitter.once('end', resolve));
 
   // test empty columns
+  console.log('__csv_3166_3');
   const __csv_3166_3 = path.join(__cwd, '/3166-3.csv');
   const __csv_3166_3_emitter = test(__csv_3166_3, 5);
   await new Promise((resolve) => __csv_3166_3_emitter.once('end', resolve));
+
+  // test unescaped double quotes
+  console.log('__csv_3166_4');
+  const __csv_3166_4 = path.join(__cwd, '/3166-4.csv');
+  const __csv_3166_4_emitter = test(__csv_3166_4, 5);
+  await new Promise((resolve) => __csv_3166_4_emitter.once('end', resolve));
 
 });

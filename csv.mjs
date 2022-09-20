@@ -83,7 +83,9 @@ export const read_csv = (file_path, high_water_mark) => {
           inside_double_quotes = false;
           column_enclosed = true;
         } else {
-          inside_double_quotes = true;
+          if (column_start === i) {
+            inside_double_quotes = true;
+          }
         }
       }
 
