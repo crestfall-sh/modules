@@ -1,6 +1,5 @@
 // @ts-check
 
-import assert from 'assert';
 import crypto from 'crypto';
 import * as hs256 from './hs256.mjs';
 
@@ -16,5 +15,6 @@ console.log({ payload });
 const token = hs256.create_token(header, payload, secret);
 console.log({ token });
 
+// uses crypto.timingSafeEqual internally
 const verified_token = hs256.verify_token(token, secret);
 console.log({ verified_token });
