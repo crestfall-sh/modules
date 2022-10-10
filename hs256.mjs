@@ -7,71 +7,114 @@
  * - jwt includes exp, iat, and the hmac signature; no lookups on claims needed, just verify the signature.
  * - jwt hs256 is server-provided hmac payload and isgnature only meant to be verifiable by the server itself
  * - if the server verifies the signature, the server msut acknowledge its claims, making it useful for microservices
- * - Cookies vs. Tokens: The Definitive Guide: https://dzone.com/articles/cookies-vs-tokens-the-definitive-guide
- * - Cryptographic Right Answers: https://latacora.singles/2018/04/03/cryptographic-right-answers.html
- * - How (not) to sign a JSON object: https://latacora.micro.blog/2019/07/24/how-not-to.html
+ * - Cookies vs. Tokens: The Definitive Guide
+ *   - https://dzone.com/articles/cookies-vs-tokens-the-definitive-guide
+ * - Cryptographic Right Answers
+ *   - https://latacora.singles/2018/04/03/cryptographic-right-answers.html
+ * - How (not) to sign a JSON object
+ *   - https://latacora.micro.blog/2019/07/24/how-not-to.html
+ * - A Child’s Garden of Inter-Service Authentication Schemes
+ *   - https://latacora.micro.blog/2018/06/12/a-childs-garden.html
  * - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent
  * - https://nodejs.org/api/crypto.html
+ * - https://gist.github.com/kepawni/45c9b37dd64a4327ff7806147b1368df#file-simplejwt-php-L96
  */
-
-import assert from 'assert';
-import crypto from 'crypto';
-
-const hashes = crypto.getHashes();
-const algorithm = 'sha256';
-assert(hashes.includes(algorithm) === true);
 
 /**
- * @returns {Buffer}
+ * @typedef {import('./hs256').header} header
+ * @typedef {import('./hs256').payload} payload
  */
-export const create_secret = () => crypto.randomBytes(32);
 
-/**
- * @param {any} data
- * @returns {string}
- */
-export const encode = (data) => encodeURIComponent(Buffer.from(JSON.stringify(data)).toString('base64'));
-
-/**
- * @param {string} data
- * @returns any
- */
-export const decode = (data) => JSON.parse(Buffer.from(decodeURIComponent(data), 'base64').toString());
-
-/**
- *
- * @param {Buffer} secret
- * @param {string} data
- * @returns {Buffer}
- */
-export const sign = (secret, data) => {
-  const signature_buffer = crypto.createHmac(algorithm, secret).update(data).digest();
-  return signature_buffer;
-};
-
-/**
- * @param {Buffer} secret
- * @param {any} data
- * @returns {string}
- */
-export const create_token = (secret, data) => {
-  const encoded = encode(data);
-  const signature_buffer = sign(secret, encoded);
-  const signature = encodeURIComponent(signature_buffer.toString('base64'));
-  const token = `${encoded}.${signature}`;
-  return token;
-};
-
-/**
- * @param {Buffer} secret
- * @param {string} token
- * @returns {any}
- */
-export const verify_token = (secret, token) => {
-  const [encoded, signature] = token.split('.');
-  const token_signature_buffer = Buffer.from(decodeURIComponent(signature), 'base64');
-  const signature_buffer = sign(secret, encoded);
-  crypto.timingSafeEqual(signature_buffer, token_signature_buffer);
-  const data = decode(encoded);
-  return data;
-};
+ import assert from 'assert';
+ import crypto from 'crypto';
+ 
+ /**
+  * @param {string} value
+  * @returns {string}
+  */
+ export const url_encode = (value) => {
+   assert(typeof value === 'string');
+   return value.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+ };
+ 
+ /**
+  * @param {string} value
+  * @returns {string}
+  */
+ export const url_decode = (value) => {
+   assert(typeof value === 'string');
+   return value.replace(/-/g, '+').replace(/_/g, '/').padEnd(value.length + (value.length % 4), '=');
+ };
+ 
+ /**
+  * @param {Buffer} data
+  * @returns {string}
+  */
+ export const base64_url_encode = (data) => url_encode(data.toString('base64'));
+ 
+ /**
+  * @param {string} data
+  * @returns {Buffer}
+  */
+ export const base64_url_decode = (data) => Buffer.from(url_decode(data), 'base64');
+ 
+ /**
+  * @param {Buffer} secret_buffer
+  * @param {Buffer} data_buffer
+  * @returns {Buffer}
+  */
+ export const hs256_hmac = (secret_buffer, data_buffer) => crypto.createHmac('sha256', secret_buffer).update(data_buffer).digest();
+ 
+ /**
+  * @param {header} header
+  * @param {payload} payload
+  * @param {string} secret
+  * @returns {string}
+  */
+ export const create_token = (header, payload, secret) => {
+   assert(header instanceof Object);
+   assert(header.alg === 'HS256');
+   assert(header.typ === 'JWT');
+   assert(payload instanceof Object);
+   assert(typeof secret === 'string');
+   const secret_buffer = Buffer.from(secret, 'base64');
+   const header_base64_url_encoded = base64_url_encode(Buffer.from(JSON.stringify(header)));
+   const payload_base64_url_encoded = base64_url_encode(Buffer.from(JSON.stringify(payload)));
+   const signature_buffer = hs256_hmac(secret_buffer, Buffer.concat([Buffer.from(header_base64_url_encoded), Buffer.from('.'), Buffer.from(payload_base64_url_encoded)]));
+   const signature_base64_url_encoded = base64_url_encode(signature_buffer);
+   const token = [header_base64_url_encoded, payload_base64_url_encoded, signature_base64_url_encoded].join('.');
+   return token;
+ };
+ 
+ /**
+  * @param {string} token
+  * @param {string} secret
+  * @returns {{ header: header, payload: payload }}
+  */
+ export const verify_token = (token, secret) => {
+   assert(typeof token === 'string');
+   assert(typeof secret === 'string');
+   const secret_buffer = Buffer.from(secret, 'base64');
+   const [header_base64_url_encoded, payload_base64_url_encoded, signature_base64_url_encoded] = token.split('.');
+   assert(typeof header_base64_url_encoded === 'string');
+   assert(typeof payload_base64_url_encoded === 'string');
+   assert(typeof signature_base64_url_encoded === 'string');
+   const header_buffer = base64_url_decode(header_base64_url_encoded);
+   /**
+    * @type {header}
+    */
+   const header = JSON.parse(header_buffer.toString());
+   assert(header instanceof Object);
+   assert(header.alg === 'HS256');
+   assert(header.typ === 'JWT');
+   const payload_buffer = base64_url_decode(payload_base64_url_encoded);
+   /**
+    * @type {payload}
+    */
+   const payload = JSON.parse(payload_buffer.toString());
+   assert(payload instanceof Object);
+   const verification_signature_buffer = hs256_hmac(secret_buffer, Buffer.concat([Buffer.from(header_base64_url_encoded), Buffer.from('.'), Buffer.from(payload_base64_url_encoded)]));
+   const signature_buffer = base64_url_decode(signature_base64_url_encoded);
+   assert(crypto.timingSafeEqual(verification_signature_buffer, signature_buffer));
+   return { header, payload };
+ };

@@ -1,18 +1,20 @@
 // @ts-check
 
 import assert from 'assert';
+import crypto from 'crypto';
 import * as hs256 from './hs256.mjs';
 
-const secret = hs256.create_secret();
-console.log(secret.toString('hex'));
+const secret = crypto.randomBytes(32).toString('base64');
+console.log({ secret });
 
-const data = { foo: 'bar' };
-console.log(data);
+const header = { alg: 'HS256', typ: 'JWT' };
+console.log({ header });
 
-const token = hs256.create_token(secret, data);
-console.log(token);
+const payload = { role: 'anon' };
+console.log({ payload });
 
-const token_data = hs256.verify_token(secret, token);
-console.log(token_data);
+const token = hs256.create_token(header, payload, secret);
+console.log({ token });
 
-assert.deepEqual(data, token_data);
+const verified_token = hs256.verify_token(token, secret);
+console.log({ verified_token });

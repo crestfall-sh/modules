@@ -1,13 +1,13 @@
 {
   "name": "modules",
-  "version": "1.21.7",
+  "version": "1.21.8",
   "description": " Modules for better workflows. ",
   "author": "joshxyzhimself <joshxyzhimself@gmail.com>",
   "license": "MIT",
-  "homepage": "https://github.com/joshxyzhimself/modules",
+  "homepage": "https://github.com/crestfall-sh/modules",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/joshxyzhimself/modules.git"
+    "url": "git+https://github.com/crestfall-sh/modules.git"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.100.0",
