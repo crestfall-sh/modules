@@ -3,13 +3,13 @@
 #### Usage
 
 ```sh
-npm install github:joshxyzhimself/modules
+npm install github:crestfall-sh/modules
 ```
 
 ```json
 {
   "scripts": {
-    "reinstall-modules": "npm install github:joshxyzhimself/modules"
+    "reinstall-modules": "npm install github:crestfall-sh/modules"
   }
 }
 ```
