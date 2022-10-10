@@ -27,6 +27,7 @@
 
 import assert from 'assert';
 import crypto from 'crypto';
+import * as luxon from 'luxon';
 
 /**
 * @param {string} value
@@ -113,8 +114,14 @@ export const verify_token = (token, secret) => {
   */
   const payload = JSON.parse(payload_buffer.toString());
   assert(payload instanceof Object);
+  if (typeof payload.exp === 'number') {
+    const exp = luxon.DateTime.fromSeconds(payload.exp);
+    assert(exp.isValid === true);
+    const now = luxon.DateTime.now();
+    assert(now < exp, 'ERR_INVALID_TOKEN_EXPIRED');
+  }
   const verification_signature_buffer = hs256_hmac(secret_buffer, Buffer.concat([Buffer.from(header_base64_url_encoded), Buffer.from('.'), Buffer.from(payload_base64_url_encoded)]));
   const signature_buffer = base64_url_decode(signature_base64_url_encoded);
-  assert(crypto.timingSafeEqual(verification_signature_buffer, signature_buffer) === true);
+  assert(crypto.timingSafeEqual(verification_signature_buffer, signature_buffer) === true, 'ERR_INVALID_TOKEN_SIGNATURE');
   return { header, payload };
 };
