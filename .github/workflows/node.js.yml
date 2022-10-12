@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest] # macos-latest, windows-latest
-        node-version: [16.x, 18.x]
+        node-version: [18.x] # uWebSockets has blacklisted 16.x
     services:
       postgres:
         image: postgres:latest
