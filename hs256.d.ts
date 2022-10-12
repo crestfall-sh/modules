@@ -6,12 +6,12 @@ export interface header {
 }
 
 export interface payload {
-  iss?: string; // issuer
-  sub?: string; // subject
-  aud?: string; // audience
-  exp?: number; // expiration time
-  nbf?: number; // not before time
   iat?: number; // issued at time
+  nbf?: number; // not before time
+  exp?: number; // expiration time
+  iss?: string; // issuer
+  aud?: string; // audience
+  sub?: string; // subject
   jti?: string; // jwt id
   role?: string;
   [key: string]: any;

@@ -1,6 +1,6 @@
 {
   "name": "modules",
-  "version": "1.21.9",
+  "version": "1.21.10",
   "description": " Modules for better workflows. ",
   "author": "joshxyzhimself <joshxyzhimself@gmail.com>",
   "license": "MIT",
@@ -16,7 +16,7 @@
     "mime-types": "^2.1.35",
     "node-fetch": "^3.2.4",
     "postgres": "^3.2.4",
-    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.10.0"
+    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.12.0"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
