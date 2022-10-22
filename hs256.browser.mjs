@@ -68,6 +68,7 @@ export const base64_url_decode2 = (data) => window.btoa(url_decode(text_decoder.
  * @param {Uint8Array} data
  */
 export const hmac = (data_buffer) => {
+
 };
 
 /**

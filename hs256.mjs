@@ -29,11 +29,6 @@ import assert from 'assert';
 import crypto from 'crypto';
 import * as luxon from 'luxon';
 
-const text_encoder = new TextEncoder();
-const text_decoder = new TextDecoder();
-
-export const b64 = () => text_encoder.encode(window.atob('asd'));
-
 /**
  * @param {string} value
  * @returns {string}
