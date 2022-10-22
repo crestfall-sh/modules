@@ -4,7 +4,7 @@
 
 import postgres from 'postgres';
 import * as luxon from 'luxon';
-import { assert } from './assert.mjs';
+import assert from './assert.mjs';
 
 /**
  * @type {[RegExp, string]}

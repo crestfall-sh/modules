@@ -2,7 +2,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { assert } from './assert.mjs';
+import assert from './assert.mjs';
 
 
 /**

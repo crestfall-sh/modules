@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert } from 'console';
+import assert from 'console';
 import crypto from 'crypto';
 import * as luxon from 'luxon';
 import * as hs256 from './hs256.mjs';

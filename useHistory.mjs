@@ -1,7 +1,7 @@
 // @ts-check
 
 import React from 'react';
-import { assert } from './assert.mjs';
+import assert from './assert.mjs';
 
 /**
  * @type {import('./useHistory').useHistory}

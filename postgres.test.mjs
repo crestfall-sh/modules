@@ -8,7 +8,7 @@
 
 import * as crypto from 'crypto';
 import * as luxon from 'luxon';
-import { assert } from './assert.mjs';
+import assert from './assert.mjs';
 import * as postgres from './postgres.mjs';
 
 process.nextTick(async () => {

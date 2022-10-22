@@ -6,7 +6,7 @@ import url from 'url';
 import path from 'path';
 import worker_threads from 'worker_threads';
 import fetch from 'node-fetch';
-import { assert } from './assert.mjs';
+import assert from './assert.mjs';
 import * as uwu from './uwu.mjs';
 import * as proc from './proc.mjs';
 

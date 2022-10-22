@@ -3,7 +3,7 @@
 import fs from 'fs';
 import url from 'url';
 import path from 'path';
-import { assert } from './assert.mjs';
+import assert from './assert.mjs';
 import { config } from './config.mjs';
 import * as s3 from './s3.mjs';
 

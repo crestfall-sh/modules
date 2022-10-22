@@ -16,3 +16,5 @@ export class AssertionError extends Error {
 
 export type assert = (value: boolean, code?: string, message?: string) => void; 
 export const assert: assert;
+
+export default assert;

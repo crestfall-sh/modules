@@ -1,7 +1,7 @@
 // @ts-check
 
 import * as redis from './redis.mjs';
-import { assert } from './assert.mjs';
+import assert from './assert.mjs';
 
 process.nextTick(async () => {
 

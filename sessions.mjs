@@ -7,7 +7,7 @@
 import crypto from 'crypto';
 import * as luxon from 'luxon';
 import * as redis from './redis.mjs';
-import { assert } from './assert.mjs';
+import assert from './assert.mjs';
 
 const no_redis = process.argv.includes('--no-redis');
 

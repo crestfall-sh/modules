@@ -41,3 +41,5 @@ export const assert = (value, code, message) => {
     throw new AssertionError(code || 'ERR_ASSERTION_ERROR', message || 'Assertion error.');
   }
 };
+
+export default assert;

@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert } from './assert.mjs';
+import assert from './assert.mjs';
 
 const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 

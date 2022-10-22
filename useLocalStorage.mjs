@@ -5,7 +5,7 @@
 // - 1.21.3: reflect updated items properly
 
 import React from 'react';
-import { assert } from './assert.mjs';
+import assert from './assert.mjs';
 
 /**
  * @template T

@@ -7,7 +7,7 @@ import path from 'path';
 import stream from 'stream';
 import mime_types from 'mime-types';
 import { default as uws } from 'uWebSockets.js';
-import { assert } from './assert.mjs';
+import assert from './assert.mjs';
 
 /**
  * @type {import('./uwu').InternalHeaders}

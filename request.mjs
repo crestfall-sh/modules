@@ -9,7 +9,7 @@
 // For options.files, uses multipart/form-data.
 // For options.files + options.data, uses multipart/form-data.
 
-import { assert } from './assert.mjs';
+import assert from './assert.mjs';
 
 /**
  * @type {Map<string|number, AbortController>}

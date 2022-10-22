@@ -1,38 +1,15 @@
 // @ts-check
 
 /**
- * References
- * - cookies and jwt are both bearer tokens.
- * - cookies does not include claims; lookups are needed.
- * - jwt includes exp, iat, and the hmac signature; no lookups on claims needed, just verify the signature.
- * - jwt hs256 is server-provided hmac payload and isgnature only meant to be verifiable by the server itself
- * - if the server verifies the signature, the server msut acknowledge its claims, making it useful for microservices
- * - Cookies vs. Tokens: The Definitive Guide
- *   - https://dzone.com/articles/cookies-vs-tokens-the-definitive-guide
- * - Cryptographic Right Answers
- *   - https://latacora.singles/2018/04/03/cryptographic-right-answers.html
- * - How (not) to sign a JSON object
- *   - https://latacora.micro.blog/2019/07/24/how-not-to.html
- * - A Child’s Garden of Inter-Service Authentication Schemes
- *   - https://latacora.micro.blog/2018/06/12/a-childs-garden.html
- * - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent
- * - https://nodejs.org/api/crypto.html
- * - https://gist.github.com/kepawni/45c9b37dd64a4327ff7806147b1368df#file-simplejwt-php-L96
- */
-
-/**
  * @typedef {import('./hs256').header} header
  * @typedef {import('./hs256').payload} payload
  */
 
-import assert from 'assert';
-import crypto from 'crypto';
+import assert from './assert.mjs';
 import * as luxon from 'luxon';
 
 const text_encoder = new TextEncoder();
 const text_decoder = new TextDecoder();
-
-export const b64 = () => text_encoder.encode(window.atob('asd'));
 
 /**
  * @param {string} value
@@ -63,6 +40,35 @@ export const base64_url_encode = (data) => url_encode(data.toString('base64'));
  * @returns {Buffer}
  */
 export const base64_url_decode = (data) => Buffer.from(url_decode(data), 'base64');
+
+/**
+ * @param {string} data
+ * @returns {Uint8Array}
+ */
+export const base64_url_encode2 = (data) => text_encoder.encode(url_encode(window.atob(data)));
+
+/**
+ * @param {Uint8Array} data
+ * @returns {string}
+ */
+export const base64_url_decode2 = (data) => window.btoa(url_decode(text_decoder.decode(data)));
+
+// secret_buffer = window.crypto.getRandomValues(new Uint8Array(32));
+// console.log({ secret_buffer });
+// secret_key = await window.crypto.subtle.importKey('raw', secret_buffer, { name: "HMAC", hash: {name: "SHA-256"} }, false, ["sign", "verify"]);
+// console.log({ secret_key });
+// data_buffer = window.crypto.getRandomValues(new Uint8Array(32));
+// console.log({ data_buffer });
+// signature_arraybuffer = await window.crypto.subtle.sign({ name: 'HMAC' }, secret_key, data_buffer)
+// console.log({ signature_arraybuffer });
+// signature_buffer = new Uint8Array(signature_arraybuffer);
+// console.log({ signature_buffer });
+
+/**
+ * @param {Uint8Array} data
+ */
+export const hmac = (data_buffer) => {
+};
 
 /**
  * @param {Buffer} secret_buffer

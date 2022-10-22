@@ -1,7 +1,7 @@
 
 // @ts-check
 
-import { assert } from './assert.mjs';
+import assert from './assert.mjs';
 import { simple_casefold, full_casefold, special_casefold, full_casefold_normalize_nfkc } from './casefold.mjs';
 
 console.log(simple_casefold('\u0041 \u00DF \u0130'));

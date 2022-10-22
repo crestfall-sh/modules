@@ -1,7 +1,7 @@
 // @ts-check
 
 import fetch, { FormData, File } from 'node-fetch';
-import { assert } from './assert.mjs';
+import assert from './assert.mjs';
 import * as proc from './proc.mjs';
 
 /**

@@ -2,7 +2,7 @@
 
 // - https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#CannedACL
 
-import { assert } from './assert.mjs';
+import assert from './assert.mjs';
 import s3 from '@aws-sdk/client-s3';
 
 /**

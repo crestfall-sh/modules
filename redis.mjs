@@ -15,7 +15,7 @@
 
 import net from 'net';
 import { EventEmitter } from 'events';
-import { assert } from './assert.mjs';
+import assert from './assert.mjs';
 
 const subscribed_allowed_commands = new Set(['subscribe', 'ssubscribe', 'sunsubscribe', 'psubscribe', 'unsubscribe', 'punsubscribe', 'ping', 'reset', 'quit']);
 

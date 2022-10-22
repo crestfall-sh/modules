@@ -10,7 +10,7 @@
 // 20 bytes = 160 bits
 //
 
-import { assert } from './assert.mjs';
+import assert from './assert.mjs';
 import * as base32 from './base32.mjs';
 
 process.nextTick(async () => {

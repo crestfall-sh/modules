@@ -3,7 +3,7 @@
 import fs from 'fs';
 import path from 'path';
 import * as uwu from './uwu.mjs';
-import { assert } from 'console';
+import assert from 'console';
 
 const __cwd = process.cwd();
 const __file = path.join(__cwd, 'dog.png');

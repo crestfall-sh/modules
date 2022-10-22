@@ -1,7 +1,7 @@
 // @ts-check
 
 import crypto from 'crypto';
-import { assert } from './assert.mjs';
+import assert from './assert.mjs';
 import * as base32 from './base32.mjs';
 
 
