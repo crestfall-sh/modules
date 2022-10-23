@@ -157,7 +157,7 @@ process.nextTick(async () => {
           const set_response = await redis.exec(client2, 'SET', 'foo', 'bar');
           console.log({ set_response });
         } catch (e) {
-          assert(e.code === redis.error_codes.ERR_UNEXPECTED_COMMAND);
+          assert(e.message === redis.error_codes.ERR_UNEXPECTED_COMMAND);
           console.log('expected error code ERR_UNEXPECTED_COMMAND OK.');
           client2.connection.end();
         }
