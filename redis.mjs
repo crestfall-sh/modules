@@ -51,7 +51,8 @@ export const exec = (client, command, ...parameters) => new Promise((resolve, re
     assert(typeof command === 'string');
     command = command.toLowerCase();
     if (client.subscribed === true) {
-      assert(subscribed_allowed_commands.has(command) === true, error_codes.ERR_UNEXPECTED_COMMAND, `Unexpected command "${command}", expecting ${Array.from(subscribed_allowed_commands).join(', ')}.`);
+      // `Unexpected command "${command}", expecting ${Array.from(subscribed_allowed_commands).join(', ')}.`
+      assert(subscribed_allowed_commands.has(command) === true, error_codes.ERR_UNEXPECTED_COMMAND);
     }
     parameters.forEach((parameter) => {
       assert(typeof parameter === 'string');

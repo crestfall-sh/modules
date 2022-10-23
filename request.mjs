@@ -26,15 +26,15 @@ export const request = async (url, options) => {
 
   try {
 
-    assert(typeof url === 'string', 'ERR_INVALID_URL', 'Invalid url.');
-    assert(url.includes('?') === false, 'ERR_INVALID_URL', 'Invalid url.');
-    assert(options instanceof Object, 'ERR_INVALID_OPTIONS', 'Invalid options.');
-    assert(options.id === undefined || typeof options.id === 'string', 'ERR_INVALID_ID', 'Invalid id.');
-    assert(options.method === undefined || typeof options.method === 'string', 'ERR_INVALID_METHOD', 'Invalid method.');
-    assert(options.headers === undefined || options.headers instanceof Object, 'ERR_INVALID_HEADERS', 'Invalid headers.');
-    assert(options.query === undefined || options.query instanceof Object, 'ERR_INVALID_QUERY', 'Invalid query.');
-    assert(options.files === undefined || options.files instanceof Array, 'ERR_INVALID_FILES', 'Invalid files.');
-    assert(options.data === undefined || options.data instanceof Object, 'ERR_INVALID_DATA', 'Invalid data.');
+    assert(typeof url === 'string', 'ERR_INVALID_URL');
+    assert(url.includes('?') === false, 'ERR_INVALID_URL');
+    assert(options instanceof Object, 'ERR_INVALID_OPTIONS');
+    assert(options.id === undefined || typeof options.id === 'string', 'ERR_INVALID_ID');
+    assert(options.method === undefined || typeof options.method === 'string', 'ERR_INVALID_METHOD');
+    assert(options.headers === undefined || options.headers instanceof Object, 'ERR_INVALID_HEADERS');
+    assert(options.query === undefined || options.query instanceof Object, 'ERR_INVALID_QUERY');
+    assert(options.files === undefined || options.files instanceof Array, 'ERR_INVALID_FILES');
+    assert(options.data === undefined || options.data instanceof Object, 'ERR_INVALID_DATA');
 
     const id = options.id || null;
 
@@ -56,7 +56,7 @@ export const request = async (url, options) => {
       if (method === null) {
         method = 'POST';
       } else {
-        assert(methods_with_body.includes(method) === true, 'ERR_INVALID_METHOD', 'Invalid method.');
+        assert(methods_with_body.includes(method) === true, 'ERR_INVALID_METHOD');
       }
       body = new FormData();
       options.files.forEach((file) => {
@@ -69,12 +69,12 @@ export const request = async (url, options) => {
       if (method === null) {
         method = 'POST';
       } else {
-        assert(methods_with_body.includes(method) === true, 'ERR_INVALID_METHOD', 'Invalid method.');
+        assert(methods_with_body.includes(method) === true, 'ERR_INVALID_METHOD');
       }
       if (options.files instanceof Array) {
         body.append('data', new Blob([JSON.stringify(options.data)], { type: 'application/json' }));
       } else {
-        assert(headers.has('content-type') === false, 'ERR_INVALID_HEADERS', 'Invalid headers.');
+        assert(headers.has('content-type') === false, 'ERR_INVALID_HEADERS');
         headers.set('content-type', 'application/json');
         body = JSON.stringify(options.data);
       }
@@ -84,7 +84,7 @@ export const request = async (url, options) => {
       method = 'GET';
     }
 
-    assert(methods.includes(method) === true, 'ERR_INVALID_METHOD', 'Invalid method.');
+    assert(methods.includes(method) === true, 'ERR_INVALID_METHOD');
 
     const query = new URLSearchParams(options.query);
     const url_with_query = `${url}?${query.toString()}`;

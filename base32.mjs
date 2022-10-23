@@ -51,7 +51,7 @@ export const encode = (data) => {
  */
 const get_character_index = (character) => {
   const character_index = characters.indexOf(character);
-  assert(character_index !== -1, 'ERR_INVALID_CHARACTER', 'Invalid character.');
+  assert(character_index !== -1, 'ERR_INVALID_CHARACTER');
   return character_index;
 };
 
