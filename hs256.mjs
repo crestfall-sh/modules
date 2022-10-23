@@ -34,8 +34,8 @@ export const create_token = (header, payload, secret_b64) => {
   assert(payload instanceof Object);
   assert(typeof secret_b64 === 'string');
   const secret_buffer = base64.decode(secret_b64);
-  const header_b64ue = base64.encodeURLSafe(utf8.encode(JSON.stringify(header)));
-  const payload_b64ue = base64.encodeURLSafe(utf8.encode(JSON.stringify(payload)));
+  const header_b64ue = base64.encodeURLSafe(utf8.encode(JSON.stringify(header))).replace(/=/g, '');
+  const payload_b64ue = base64.encodeURLSafe(utf8.encode(JSON.stringify(payload))).replace(/=/g, '');
   const signature_data = utf8.encode(`${header_b64ue}.${payload_b64ue}`);
   const signature_buffer = hmac_sha256(secret_buffer, signature_data);
   const signature_b64ue = base64.encodeURLSafe(signature_buffer).replace(/=/g, '');
