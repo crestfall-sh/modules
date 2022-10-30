@@ -15,6 +15,6 @@ export interface payload {
   jti?: string; // jwt id
   role?: string;
   email?: string;
+  scopes?: string[];
   refresh_token?: string;
-  [key: string]: any;
 }
