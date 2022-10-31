@@ -18,3 +18,8 @@ export interface payload {
   scopes?: string[];
   refresh_token?: string;
 }
+
+export interface token_data {
+  header: header;
+  payload: payload;
+}

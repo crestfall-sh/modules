@@ -5,6 +5,7 @@
 /**
  * @typedef {import('./hs256').header} header
  * @typedef {import('./hs256').payload} payload
+ * @typedef {import('./hs256').token_data} token_data
  */
 
 import assert from './assert.mjs';
@@ -74,7 +75,7 @@ export const read_token = (token) => {
 /**
  * @param {string} token
  * @param {string} secret
- * @returns {{ header: header, payload: payload }}
+ * @returns {token_data}
  */
 export const verify_token = (token, secret) => {
   assert(typeof token === 'string');
