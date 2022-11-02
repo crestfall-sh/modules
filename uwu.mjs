@@ -305,18 +305,18 @@ export const use_middlewares = (options, ...middlewares) => {
       const chunk_buffer = Buffer.from(chunk_arraybuffer.slice(0));
       request.buffer = Buffer.concat([request.buffer, chunk_buffer]);
       if (is_last === true) {
-        try {
-          if (request.buffer.length > 0) {
+        if (request.buffer.length > 0) {
+          try {
             if (request.headers.get('Content-Type').includes('application/json') === true) {
               request.json = JSON.parse(request.buffer.toString());
             }
             if (request.headers.get('Content-Type').includes('multipart/form-data') === true) {
               request.parts = uws.getParts(request.buffer, request.headers.get('Content-Type'));
             }
+          } catch (e) {
+            request.error = e;
+            console.error(e);
           }
-        } catch (e) {
-          request.error = e;
-          console.error(e);
         }
         process.nextTick(apply_middlewares, res, middlewares, response, request);
       }
