@@ -293,32 +293,43 @@ export const use = (...middlewares) => {
       stream: null,
 
     };
-    res.onData((chunk_arraybuffer, is_last) => {
-      if (request.buffer === null) {
-        request.buffer = Buffer.from([]);
-      }
-      const chunk_buffer = Buffer.from(chunk_arraybuffer.slice(0));
-      request.buffer = Buffer.concat([request.buffer, chunk_buffer]);
-      if (is_last === true) {
-        if (request.buffer.length > 0) {
-          try {
-            if (request.headers.get('Content-Type').includes('application/json') === true) {
-              request.json = JSON.parse(request.buffer.toString());
-            }
-            if (request.headers.get('Content-Type').includes('multipart/form-data') === true) {
-              request.parts = uws.getParts(request.buffer, request.headers.get('Content-Type'));
-            }
-          } catch (e) {
-            request.error = e;
-            console.error(e);
+    switch (request.method) {
+      case 'post':
+      case 'put':
+      case 'patch': {
+        res.onData((chunk_arraybuffer, is_last) => {
+          if (request.buffer === null) {
+            request.buffer = Buffer.from(chunk_arraybuffer.slice(0));
+          } else {
+            request.buffer = Buffer.concat([request.buffer, Buffer.from(chunk_arraybuffer.slice(0))]);
           }
-        }
-        process.nextTick(apply, res, middlewares, response, request);
+          if (is_last === true) {
+            if (request.buffer.length > 0) {
+              try {
+                if (request.headers.get('Content-Type').includes('application/json') === true) {
+                  request.json = JSON.parse(request.buffer.toString());
+                }
+                if (request.headers.get('Content-Type').includes('multipart/form-data') === true) {
+                  request.parts = uws.getParts(request.buffer, request.headers.get('Content-Type'));
+                }
+              } catch (e) {
+                request.error = e;
+                console.error(e);
+              }
+            }
+            process.nextTick(apply, res, middlewares, response, request);
+          }
+        });
+        res.onAborted(() => {
+          response.aborted = true;
+        });
+        break;
       }
-    });
-    res.onAborted(() => {
-      response.aborted = true;
-    });
+      default: {
+        process.nextTick(apply, res, middlewares, response, request);
+        break;
+      }
+    }
   };
   return uws_handler;
 };

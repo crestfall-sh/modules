@@ -48,6 +48,7 @@ const test = async () => {
 
   const token = await uwu.http(app, uwu.port_access_types.SHARED, port);
 
+
   const response = await fetch(`${origin}/test-html`, {
     method: 'GET',
   });
@@ -93,17 +94,23 @@ const test = async () => {
   const response6 = await fetch(`${origin}/test-json-post`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+  });
+  assert(response6.status === 200);
+
+  const response7 = await fetch(`${origin}/test-json-post`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ foo: 'bar' }),
   });
   /**
    * @type {any}
    */
-  const body6 = await response6.json();
-  assert(response6.status === 200);
-  assert(body6 instanceof Object);
-  assert(body6.method === 'post');
-  assert(body6.json instanceof Object);
-  assert(body6.json.foo === 'bar');
+  const body7 = await response7.json();
+  assert(response7.status === 200);
+  assert(body7 instanceof Object);
+  assert(body7.method === 'post');
+  assert(body7.json instanceof Object);
+  assert(body7.json.foo === 'bar');
 
   // avoid dropping requests from other threads
   await proc.sleep(500);

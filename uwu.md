@@ -2,6 +2,11 @@
 
 ## changelog
 
+### v1.23.0
+
+- fix OPTIONS handling
+- add OPTIONS testing
+
 ### v1.21.0
 
 - update: replace `uwu.use_middlewares(...middlewares)` with `uwu.use_middlewares(options, ...middlewares)`
