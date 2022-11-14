@@ -32,22 +32,21 @@ const test = async () => {
   const origin = `http://localhost:${port}`;
   const app = uwu.uws.App({});
 
-  uwu.use_static_middleware(app, '/test-static/', path.join(__dirname, '/'), { file_cache: false });
-  uwu.use_static_middleware(app, '/test-cached-static/', path.join(__dirname, '/'), { file_cache: true });
-  app.get('/test-html', uwu.use_middleware(async (response) => {
+  uwu.serve(app, path.join(__dirname, '/'), (buffer) => buffer);
+  app.get('/test-html', uwu.use(async (response) => {
     response.html = test_html;
   }));
-  app.get('/test-query', uwu.use_middleware(async (response, request) => {
+  app.get('/test-query', uwu.use(async (response, request) => {
     response.json = request;
   }));
-  app.get('/test-headers', uwu.use_middleware(async (response, request) => {
+  app.get('/test-headers', uwu.use(async (response, request) => {
     response.json = request;
   }));
-  app.post('/test-json-post', uwu.use_middleware(async (response, request) => {
+  app.post('/test-json-post', uwu.use(async (response, request) => {
     response.json = request;
   }));
 
-  const token = await uwu.serve_http(app, uwu.port_access_types.SHARED, port);
+  const token = await uwu.http(app, uwu.port_access_types.SHARED, port);
 
   const response = await fetch(`${origin}/test-html`, {
     method: 'GET',
@@ -57,21 +56,13 @@ const test = async () => {
   const body = await response.text();
   assert(body === test_html);
 
-  const response2 = await fetch(`${origin}/test-static/uwu.test.mjs`, {
+  const response2 = await fetch(`${origin}/uwu.test.mjs`, {
     method: 'GET',
   });
   assert(response2.status === 200);
   assert(response2.headers.get('Content-Encoding') === null);
   const body2 = await response2.text();
   assert(body2 === test_file);
-
-  const response3 = await fetch(`${origin}/test-cached-static/uwu.test.mjs`, {
-    method: 'GET',
-  });
-  assert(response3.status === 200);
-  assert(response3.headers.get('Content-Encoding') === null);
-  const body3 = await response3.text();
-  assert(body3 === test_file);
 
   const response4 = await fetch(`${origin}/test-query?foo=bar`, {
     method: 'GET',
@@ -116,6 +107,8 @@ const test = async () => {
 
   // avoid dropping requests from other threads
   await proc.sleep(500);
+
+  console.log('TEST OK');
 
   uwu.uws.us_listen_socket_close(token);
 };

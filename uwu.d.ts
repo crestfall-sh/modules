@@ -1,10 +1,7 @@
 import stream from 'stream';
 import * as uws from 'uWebSockets.js';
 
-export class InternalHeaders extends Map {
-  get: (key: string) => string;
-  set: (key: string, value: string|number|boolean) => InternalHeaders;
-};
+export class InternalHeaders extends Map<string, string> {}
 export class InternalURLSearchParams extends URLSearchParams {}
 
 export interface cache_control_types {
@@ -47,12 +44,6 @@ export interface response {
 
 }
 
-export interface static_response {
-  file_cache?: boolean;
-  file_cache_max_age_ms?: number;
-  headers?: InternalHeaders;
-}
-
 export interface cached_file { 
   file_name: string;
   file_content_type: string;
@@ -60,7 +51,7 @@ export interface cached_file {
   timestamp: number;
 }
 
-export interface request {
+export interface request<T> {
   url: string;
   method: string;
   headers: InternalHeaders;
@@ -69,33 +60,23 @@ export interface request {
   ip_address: string;
   
   buffer: Buffer;
-  json: any;
+  json: T;
   parts: uws.MultipartField[];
 
   error: Error;
 }
 
-export type middleware = (response: response, request: request) => void;
-
-export interface middleware_options {
-  pathname_parameters: number;
-}
-
-export type apply_middlewares = (res: uws.HttpResponse, middlewares: middleware[], response: response, request: request) => void;
-
 export type uws_handler = (res: uws.HttpResponse, req: uws.HttpRequest) => void;
+export type middleware = (response: response, request: request<any>) => Promise<void>;
+export type use = (...middlewares: middleware[]) => uws_handler;
+export type apply = (res: uws.HttpResponse, middlewares: middleware[], response: response, request: request<any>) => void;
 
-export type use_middlewares = (options: middleware_options, ...middlewares: middleware[]) => uws_handler;
-export const use_middlewares: use_middlewares;
+export type cors = (app: uws.TemplatedApp) => void;
+export type serve_transform = (buffer: Buffer) => Buffer;
+export type serve = (app: uws.TemplatedApp, base_directory: string, serve_transform: serve_transform) => void;
 
-export type use_middleware = (middleware: middleware, options?: middleware_options) => uws_handler;
-export const use_middleware: use_middleware;
-
-export type use_static_middleware = (app: uws.TemplatedApp, url_pathname: string, local_pathname: string, static_response: static_response) => void;
-export const use_static_middleware: use_static_middleware;
-
-export type serve_http = (app: uws.TemplatedApp, port_access_type: number, port: number) => Promise<uws.us_listen_socket>;
-export const serve_http: serve_http;
+export type http = (app: uws.TemplatedApp, port_access_type: number, port: number) => Promise<uws.us_listen_socket>;
+export const http: http;
 
 export type default_headers = Set<string>;
 export const default_headers: default_headers;

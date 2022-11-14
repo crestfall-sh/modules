@@ -17,13 +17,17 @@ import assert from './assert.mjs';
  */
 export class InternalHeaders extends Map {
   has (key) {
+    assert(typeof key === 'string');
     return super.has(key.toLowerCase());
   }
   get (key) {
+    assert(typeof key === 'string');
     return super.get(key.toLowerCase());
   }
   set (key, value) {
-    return super.set(key.toLowerCase(), String(value));
+    assert(typeof key === 'string');
+    assert(typeof value === 'string');
+    return super.set(key.toLowerCase(), value);
   }
   toJSON () {
     const json = {};
@@ -76,9 +80,9 @@ const file_cache = new Map();
 
 
 /**
- * @type {import('./uwu').apply_middlewares}
+ * @type {import('./uwu').apply}
  */
-const apply_middlewares = async (res, middlewares, response, request) => {
+const apply = async (res, middlewares, response, request) => {
   try {
     assert(res instanceof Object);
     assert(res.writeStatus instanceof Function);
@@ -221,9 +225,9 @@ const apply_middlewares = async (res, middlewares, response, request) => {
 };
 
 /**
- * @type {import('./uwu').use_middlewares}
+ * @type {import('./uwu').use}
  */
-export const use_middlewares = (options, ...middlewares) => {
+export const use = (...middlewares) => {
 
   middlewares.forEach((middleware) => {
     assert(middleware instanceof Function);
@@ -249,7 +253,7 @@ export const use_middlewares = (options, ...middlewares) => {
       url: req.getUrl(),
       method: req.getMethod(),
       headers: new InternalHeaders(),
-      pathname_params: [],
+      pathname_params: null,
       search_params: new InternalURLSearchParams(req.getQuery()),
       ip_address: Buffer.from(res.getRemoteAddressAsText()).toString(),
       buffer: null,
@@ -262,17 +266,6 @@ export const use_middlewares = (options, ...middlewares) => {
     req.forEach((key, value) => {
       request.headers.set(key, value);
     });
-
-    if (options instanceof Object) {
-      if (typeof options.pathname_parameters === 'number') {
-        assert(Number.isFinite(options.pathname_parameters) === true);
-        assert(Number.isInteger(options.pathname_parameters) === true);
-        assert(options.pathname_parameters > 0);
-        for (let i = 0, l = options.pathname_parameters; i < l; i += 1) {
-          request.pathname_params.push(req.getParameter(i));
-        }
-      }
-    }
 
     /**
      * @type {import('./uwu').response}
@@ -300,8 +293,10 @@ export const use_middlewares = (options, ...middlewares) => {
       stream: null,
 
     };
-    request.buffer = Buffer.from([]);
     res.onData((chunk_arraybuffer, is_last) => {
+      if (request.buffer === null) {
+        request.buffer = Buffer.from([]);
+      }
       const chunk_buffer = Buffer.from(chunk_arraybuffer.slice(0));
       request.buffer = Buffer.concat([request.buffer, chunk_buffer]);
       if (is_last === true) {
@@ -318,7 +313,7 @@ export const use_middlewares = (options, ...middlewares) => {
             console.error(e);
           }
         }
-        process.nextTick(apply_middlewares, res, middlewares, response, request);
+        process.nextTick(apply, res, middlewares, response, request);
       }
     });
     res.onAborted(() => {
@@ -328,57 +323,73 @@ export const use_middlewares = (options, ...middlewares) => {
   return uws_handler;
 };
 
-/**
- * @type {import('./uwu').use_middleware}
- */
-export const use_middleware = (middleware, options) => {
-  return use_middlewares(options, middleware);
+export const cors = (app) => {
+  app.options('/*', use(async (response, request) => {
+    response.status = 204;
+    const access_control_request_method = request.headers.get('access-control-request-method');
+    const origin = request.headers.get('origin');
+    const access_control_allow_headers = ['content-type'];
+    if (request.headers.has('access-control-request-headers') === true) {
+      const access_control_request_headers = request.headers.get('access-control-request-headers').split(',');
+      access_control_allow_headers.push(...access_control_request_headers);
+    }
+    response.headers.set('Access-Control-Allow-Origin', origin);
+    response.headers.set('Access-Control-Allow-Methods', access_control_request_method);
+    response.headers.set('Access-Control-Allow-Headers', access_control_allow_headers.join(','));
+    response.headers.set('Access-Control-Max-Age', '300');
+  }));
 };
 
-
 /**
- * @type {import('./uwu').use_static_middleware}
+ * @type {import('./uwu').serve}
  */
-export const use_static_middleware = (app, url_pathname, local_pathname, static_response) => {
+export const serve = (app, base_directory, serve_transform) => {
   assert(app instanceof Object);
-  assert(app.get instanceof Function);
-
-  assert(typeof url_pathname === 'string');
-  assert(url_pathname.substring(0, 1) === '/');
-  assert(url_pathname.substring(url_pathname.length - 1, url_pathname.length) === '/');
-
-  assert(typeof local_pathname === 'string');
-  assert(local_pathname.substring(local_pathname.length - 1, local_pathname.length) === path.sep);
-  assert(fs.existsSync(local_pathname) === true);
-  assert(path.isAbsolute(local_pathname) === true);
-
-  assert(static_response === undefined || static_response instanceof Object);
-
-  const core_static_middleware = use_middleware(async (response, request) => {
-    response.file_path = request.url.replace(url_pathname, local_pathname);
-    if (static_response instanceof Object) {
-      Object.assign(response, static_response);
+  assert(typeof base_directory === 'string');
+  assert(fs.existsSync(base_directory) === true);
+  assert(path.isAbsolute(base_directory) === true);
+  assert(serve_transform instanceof Function);
+  app.get('/*', (res, req) => {
+    let url_pathname = req.getUrl();
+    if (url_pathname === '/') {
+      url_pathname = '/index.html';
     }
-  });
-
-  app.get(url_pathname.concat('*'), (res, req) => {
-    assert(req instanceof Object);
-    assert(req.getUrl instanceof Function);
-    const request_url = req.getUrl();
-    const request_url_extname = path.extname(request_url);
-    if (request_url_extname === '') {
+    if (path.extname(url_pathname) === '') {
       req.setYield(true);
       return;
     }
-    core_static_middleware(res, req);
+    const file_path = path.join(base_directory, url_pathname);
+    if (fs.existsSync(file_path) === true) {
+      const file_stat = fs.statSync(file_path);
+      if (file_stat.isFile() === true) {
+        const file_name = path.basename(url_pathname);
+        const file_content_type = mime_types.contentType(file_name) || null;
+        if (typeof file_content_type === 'string') {
+          res.writeStatus('200');
+          res.writeHeader('Content-Type', file_content_type);
+          res.write(serve_transform(fs.readFileSync(file_path)));
+          res.end();
+          return;
+        }
+        res.writeStatus('200');
+        res.writeHeader('Content-Type', 'application/octet-stream');
+        res.write(serve_transform(fs.readFileSync(file_path)));
+        res.end();
+        return;
+      }
+    }
+    res.writeStatus('404');
+    res.writeHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.write('404 Not Found');
+    res.end();
+    return;
   });
 };
 
-
 /**
- * @type {import('./uwu').serve_http}
+ * @type {import('./uwu').http}
  */
-export const serve_http = (app, port_access_type, port) => new Promise((resolve, reject) => {
+export const http = (app, port_access_type, port) => new Promise((resolve, reject) => {
   assert(app instanceof Object);
   assert(app.listen instanceof Function);
   assert(typeof port_access_type === 'number');
@@ -387,7 +398,7 @@ export const serve_http = (app, port_access_type, port) => new Promise((resolve,
     if (token) {
       resolve(token);
     } else {
-      reject(new Error('uws :: app.listen failed, invalid token'));
+      reject(new Error('uWebSockets.js: app.listen failed, invalid token'));
     }
   });
 });
