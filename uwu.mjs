@@ -334,6 +334,9 @@ export const use = (...middlewares) => {
   return uws_handler;
 };
 
+/**
+ * @type {import('./uwu').cors}
+ */
 export const cors = (app) => {
   app.options('/*', use(async (response, request) => {
     response.status = 204;
