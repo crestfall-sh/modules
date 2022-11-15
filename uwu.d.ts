@@ -55,7 +55,6 @@ export interface request<T> {
   url: string;
   method: string;
   headers: InternalHeaders;
-  pathname_params: string[];
   search_params: InternalURLSearchParams;
   ip_address: string;
   

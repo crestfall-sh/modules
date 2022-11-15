@@ -253,7 +253,6 @@ export const use = (...middlewares) => {
       url: req.getUrl(),
       method: req.getMethod(),
       headers: new InternalHeaders(),
-      pathname_params: null,
       search_params: new InternalURLSearchParams(req.getQuery()),
       ip_address: Buffer.from(res.getRemoteAddressAsText()).toString(),
       buffer: null,
