@@ -67,13 +67,17 @@ export interface request<T> {
 }
 
 export type uws_handler = (res: uws.HttpResponse, req: uws.HttpRequest) => void;
-export type middleware = (response: response, request: request<any>) => Promise<void>;
-export type use = (...middlewares: middleware[]) => uws_handler;
+export type middleware<T> = (response: response, request: request<T>) => Promise<void>;
 export type apply = (res: uws.HttpResponse, middlewares: middleware[], response: response, request: request<any>) => void;
+export type use = (...middlewares: middleware<any>[]) => uws_handler;
+export const use: use;
 
 export type cors = (app: uws.TemplatedApp) => void;
+export const cors: cors;
+
 export type serve_transform = (buffer: Buffer) => Buffer;
 export type serve = (app: uws.TemplatedApp, base_directory: string, serve_transform: serve_transform) => void;
+export const serve: serve;
 
 export type http = (app: uws.TemplatedApp, port_access_type: number, port: number) => Promise<uws.us_listen_socket>;
 export const http: http;
