@@ -388,6 +388,11 @@ export const serve = (app, base_directory, serve_transform) => {
         res.end();
         return;
       }
+      res.writeStatus('403');
+      res.writeHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.write('403 Forbidden');
+      res.end();
+      return;
     }
     res.writeStatus('404');
     res.writeHeader('Content-Type', 'text/plain; charset=utf-8');
