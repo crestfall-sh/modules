@@ -116,8 +116,12 @@ const apply = async (res, middlewares, response, request) => {
       } catch (e) {
         if (fs.existsSync(response.file_path) === false) {
           response.status = 404;
+          response.headers.set('Content-Type', 'text/plain; charset=utf-8');
+          response.buffer = Buffer.from('404 Not Found');
         } else {
           response.status = 500;
+          response.headers.set('Content-Type', 'text/plain; charset=utf-8');
+          response.buffer = Buffer.from('500 Internal Server Error');
         }
       }
       if (response.status === 200) {
@@ -174,7 +178,9 @@ const apply = async (res, middlewares, response, request) => {
         response.headers.set('Content-Disposition', `attachment; filename="${response.file_name}"`);
       }
     }
+
     res.writeStatus(String(response.status));
+
     response.headers.forEach((value, key) => {
       res.writeHeader(key, value);
     });
@@ -218,6 +224,8 @@ const apply = async (res, middlewares, response, request) => {
     response.error = e;
     if (response.aborted === false) {
       res.writeStatus('500');
+      res.writeHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.write('500 Internal Server Error');
       res.end();
     }
     console.error(e);
