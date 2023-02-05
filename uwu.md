@@ -2,6 +2,24 @@
 
 ## changelog
 
+### v1.23.1
+
+- add `response.error_write_message` as `boolean`, this will write error messages to the response body.
+
+```js
+app.post('/sign-in', uwu.use(async (response, request) => {
+  response.error_write_message = true;
+  assert(false, 'Example error message.')
+}));
+```
+
+```
+HTTP/1.1 500 Internal Server Error
+Content-Type: text/plain; charset=utf-8
+Cotnent-Length: 21
+Example error message.
+```
+
 ### v1.23.0
 
 - fix OPTIONS handling

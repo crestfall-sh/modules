@@ -25,6 +25,7 @@ export interface response {
   aborted: boolean;
   ended: boolean;
   error: Error;
+  error_write_message: boolean;
 
   status: number;
   headers: InternalHeaders;

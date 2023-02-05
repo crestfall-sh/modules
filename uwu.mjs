@@ -224,8 +224,10 @@ const apply = async (res, middlewares, response, request) => {
     response.error = e;
     if (response.aborted === false) {
       res.writeStatus('500');
-      res.writeHeader('Content-Type', 'text/plain; charset=utf-8');
-      res.write('500 Internal Server Error');
+      if (response.error_write_message === true) {
+        res.writeHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.write(e.message);
+      }
       res.end();
     }
     console.error(e);
@@ -282,6 +284,7 @@ export const use = (...middlewares) => {
       aborted: false,
       ended: false,
       error: null,
+      error_write_message: false,
 
       status: 200,
       headers: new InternalHeaders([['Cache-Control', cache_control_types.no_store]]),
