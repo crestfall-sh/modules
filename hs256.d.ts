@@ -5,32 +5,6 @@ export interface header {
 }
 
 /**
- * - https://typesense.org/docs/0.24.0/api/api-keys.html
- */
-export interface typesense_key {
-  /**
-   * By default Typesense will auto-generate a random key for you, when this parameter is not specified. 
-   */
-  value?: string;
-  /**
-   * List of allowed actions. See next table for possible values.
-   */
-  actions: string[];
-  /**
-   * List of collections that this key is scoped to. Supports regex. Eg: coll.* will match all collections that have "coll" in their name.
-   */
-  collections: string[];
-  /**
-   * Internal description to identify what the key is for
-   */
-  description: string;
-  /**
-   * Unix timestamp until which the key is valid.
-   */
-  expires_at?: number;
-}
-
-/**
  * - https://www.rfc-editor.org/rfc/rfc7519#section-4
  * - https://www.iana.org/assignments/jwt/jwt.xhtml
  */
@@ -113,9 +87,13 @@ export interface payload {
    */
   scopes?: string[];
   /**
-   * typesense api key
+   * refresh token
    */
-  typesense_key?: typesense_key;
+  refresh_token?: string;
+  /**
+   * typesense token
+   */
+  typesense_token?: string;
 
 }
 
