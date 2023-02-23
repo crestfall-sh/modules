@@ -1,6 +1,6 @@
 {
   "name": "modules",
-  "version": "1.23.5",
+  "version": "1.23.6",
   "description": " Modules for better workflows. ",
   "author": "joshxyzhimself <joshxyzhimself@gmail.com>",
   "license": "MIT",
@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.100.0",
-    "@grammyjs/types": "github:grammyjs/types#v2.7.1",
+    "@grammyjs/types": "github:grammyjs/types#v2.12.1",
     "@stablelib/base64": "^1.0.1",
     "@stablelib/hmac": "^1.0.1",
     "@stablelib/sha256": "^1.0.1",
@@ -20,7 +20,7 @@
     "mime-types": "^2.1.35",
     "node-fetch": "^3.2.4",
     "postgres": "^3.2.4",
-    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.15.0"
+    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.19.0"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
