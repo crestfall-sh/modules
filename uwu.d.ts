@@ -87,6 +87,16 @@ export const use: use;
 export type cors = (app: uws.TemplatedApp) => void;
 export const cors: cors;
 
+export interface serve_cache_record {
+  buffer: Buffer;
+  buffer_hash: string;
+  gzip_buffer: Buffer;
+  gzip_buffer_hash: string;
+  /**
+   * expiration timestamp
+   */
+  exp: number;
+}
 export interface serve_record {
   /**
    * @description URL prefix to check.
