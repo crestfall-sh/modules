@@ -5,9 +5,21 @@ export class InternalHeaders extends Map<string, string> {}
 export class InternalURLSearchParams extends URLSearchParams {}
 
 export interface cache_control_types {
+  /**
+   * disallow caching
+   */
   no_store: string;
+  /**
+   * allow caching, must revalidate:
+   */
   no_cache: string;
+  /**
+   * allow private caching, no revalidate, one hour:
+   */
   private_cache: string;
+  /**
+   * allow public caching, no revalidate, one day:
+   */
   public_cache: string;
 }
 
@@ -75,7 +87,7 @@ export const use: use;
 export type cors = (app: uws.TemplatedApp) => void;
 export const cors: cors;
 
-export interface serve_entry {
+export interface serve_record {
   /**
    * @description URL prefix to check.
    * @example '/assets/'
@@ -86,6 +98,11 @@ export interface serve_entry {
    * @example path.join(process.cwd(), '/assets/');
    */
   directory: string;
+  /**
+   * @description Additional response headers.
+   * @example new Map([['Cache-Control', 'no-store']])
+   */
+  headers?: Map<string, string>;
 }
 export interface serve_options {
   /**
@@ -100,13 +117,25 @@ export interface serve_options {
   /**
    * @description Included pairs of url prefix and local directory to be served.
    * @example [{ url: '/assets/', directory: path.join(process.cwd(), '/assets/') }]
+   * @example
+   * [
+   *   {
+   *     url: '/assets/',
+   *     directory: path.join(process.cwd(), '/assets/'),
+   *     headers: new Map([['Cache-Control', 'no-store']])
+   *   }
+   * ]
    */
-  include: serve_entry[];
+  include: serve_record[];
   /**
    * @description Excluded url prefixes.
    * @example '/api/'
    */
   exclude: string[];
+  /**
+   * @description Set to true to log debug information.
+   */
+  debug?: boolean;
 }
 export type serve = (serve_options: serve_options) => void;
 export const serve: serve;

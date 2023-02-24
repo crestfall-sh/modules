@@ -4,16 +4,21 @@
 
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import stream from 'stream';
+import zlib from 'zlib';
 import mime_types from 'mime-types';
 import { default as uws } from 'uWebSockets.js';
 import assert from './assert.mjs';
 
 /**
  * @type {import('./uwu').InternalHeaders}
- * @description complies with RFC 7230 case-insensitive headers
+ * @description Complies with RFC 7230 Case-Insensitive Headers
+ * @description Each header field consists of a case-insensitive field name followed
+ * by a colon (":"), optional leading whitespace, the field value, and
+ * optional trailing whitespace.
  * @description https://www.rfc-editor.org/rfc/rfc7230#section-3.2
- * @description also allows JSON-encoding of our request.header and response.header
+ * @description Also allows JSON-encoding of our request.header and response.header
  */
 export class InternalHeaders extends Map {
   has (key) {
@@ -56,13 +61,21 @@ export class InternalURLSearchParams extends URLSearchParams {
  * @type {import('./uwu').cache_control_types}
  */
 export const cache_control_types = {
-  // prevent caching:
+  /**
+   * prevent caching
+   */
   no_store: 'no-store, max-age=0',
-  // allow caching, must revalidate:
+  /**
+   * allow caching, must revalidate:
+   */
   no_cache: 'no-cache',
-  // allow private caching, no revalidate, one hour:
+  /**
+   * allow private caching, no revalidate, one hour:
+   */
   private_cache: 'private, max-age=3600, s-maxage=3600',
-  // allow public caching, no revalidate, one day:
+  /**
+   * allow public caching, no revalidate, one day:
+   */
   public_cache: 'public, max-age=86400, s-maxage=86400',
 };
 
@@ -366,16 +379,18 @@ export const cors = (app) => {
 
 /**
  * @description Lets you serve static files with url prefixes and local directories.
- * @todo in-memory caching, with in-memory ttl
- * @todo gzip compression, sha224 hashing
- * @todo cache-control, etags, 304
+ * @description supports gzip compression
+ * @description supports sha224 hashing for etag
+ * @description supports cache-control, etag, and 304 responses
+ * @todo in-memory caching with ttl
  * @todo buffer transform function
  * @type {import('./uwu').serve}
  */
 export const serve = (serve_options) => {
   assert(serve_options instanceof Object);
-  const { app, index, include, exclude } = serve_options;
+  const { app, index, include, exclude, debug } = serve_options;
   assert(app instanceof Object);
+  assert(typeof index === 'string' || typeof index === 'undefined');
   if (typeof index === 'string') {
     assert(fs.existsSync(index) === true);
     assert(path.isAbsolute(index) === true);
@@ -391,49 +406,120 @@ export const serve = (serve_options) => {
     assert(entry_directory_stat.isDirectory() === true);
   });
   assert(exclude instanceof Array);
+  assert(typeof debug === 'boolean' || typeof debug === 'undefined');
   app.get('/*', (res, req) => {
-    const url_pathname = req.getUrl();
+    const request = {
+      url_pathname: req.getUrl(),
+      file_pathname: index || null,
+      headers: new InternalHeaders(),
+    };
+    req.forEach((key, value) => {
+      request.headers.set(key, value);
+    });
+    if (debug === true) {
+      console.log({ request });
+    }
+    const response = {
+      /**
+       * @type {string}
+       */
+      status: '200',
+      /**
+       * @type {Map<string, string>}
+       */
+      headers: new InternalHeaders([['Cache-Control', cache_control_types.no_store]]),
+      /**
+       * @type {Buffer}
+       */
+      body: null,
+    };
     for (let i = 0, l = exclude.length; i < l; i += 1) {
       const url_prefix = exclude[i];
-      if (url_pathname.startsWith(url_prefix) === true) {
+      if (request.url_pathname.startsWith(url_prefix) === true) {
         req.setYield(true);
         return;
       }
     }
-    let file_pathname = index;
     for (let i = 0, l = include.length; i < l; i += 1) {
-      const entry = include[i];
-      if (url_pathname.startsWith(entry.url) === true) {
-        file_pathname = path.join(entry.directory, url_pathname);
+      const record = include[i];
+      if (request.url_pathname.startsWith(record.url) === true) {
+        request.file_pathname = path.join(record.directory, request.url_pathname);
+        if (record.headers instanceof Map) {
+          record.headers.forEach((value, key) => {
+            response.headers.set(key, value);
+          });
+        }
         break;
       }
     }
-    if (fs.existsSync(file_pathname) === true) {
-      const file_stat = fs.statSync(file_pathname);
-      if (file_stat.isFile() === true) {
-        const file_name = path.basename(url_pathname);
-        const file_content_type = mime_types.contentType(file_name) || null;
-        res.writeStatus('200');
-        if (typeof file_content_type === 'string') {
-          res.writeHeader('Content-Type', file_content_type);
-        } else {
-          res.writeHeader('Content-Type', 'application/octet-stream');
-        }
-        res.write(fs.readFileSync(file_pathname));
+    if (request.file_pathname === null) {
+      req.setYield(true);
+      return;
+    }
+
+    try {
+
+      fs.accessSync(request.file_pathname, fs.constants.R_OK);
+
+      const file_stat = fs.statSync(request.file_pathname);
+      assert(file_stat.isFile() === true);
+
+      const file_name = path.basename(request.url_pathname);
+      const file_content_type = mime_types.contentType(file_name) || null;
+
+      if (typeof file_content_type === 'string') {
+        response.headers.set('Content-Type', file_content_type);
+      } else {
+        response.headers.set('Content-Type', 'application/octet-stream');
+      }
+
+      const file_buffer = fs.readFileSync(request.file_pathname);
+      response.body = file_buffer;
+
+      if (req.getHeader('accept-encoding').includes('gzip') === true) {
+        const file_gzip_buffer = zlib.gzipSync(response.body);
+        response.headers.set('Content-Encoding', 'gzip');
+        response.body = file_gzip_buffer;
+      }
+
+      const response_buffer_hash = crypto.createHash('sha224').update(response.body).digest('hex');
+      response.headers.set('Content-ETag', response_buffer_hash);
+      if (req.getHeader('if-none-match') === response_buffer_hash) {
+        response.status = '304';
+        response.body = null;
+      }
+
+      if (debug === true) {
+        console.log({ request, response });
+      }
+
+      res.writeStatus(response.status);
+      response.headers.forEach((value, key) => {
+        res.writeHeader(key, value);
+      });
+      if (response.body instanceof Buffer) {
+        res.write(response.body);
+      }
+      res.end();
+
+      return;
+    } catch (e) {
+      if (fs.existsSync(request.file_pathname) === true) {
+        // 403
+        res.writeStatus('403');
+        res.writeHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.write('403 Forbidden');
+        res.end();
+        return;
+      } else {
+        // 404
+        res.writeStatus('404');
+        res.writeHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.write('404 Not Found');
         res.end();
         return;
       }
-      res.writeStatus('403');
-      res.writeHeader('Content-Type', 'text/plain; charset=utf-8');
-      res.write('403 Forbidden');
-      res.end();
-      return;
     }
-    res.writeStatus('404');
-    res.writeHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.write('404 Not Found');
-    res.end();
-    return;
   });
 };
 

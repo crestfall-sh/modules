@@ -36,6 +36,7 @@ const test = async () => {
     app,
     include: [{ url: '/', directory: process.cwd() }],
     exclude: [],
+    debug: true,
   });
   app.get('/test-html', uwu.use(async (response) => {
     response.html = test_html;
@@ -65,7 +66,7 @@ const test = async () => {
     method: 'GET',
   });
   assert(response2.status === 200);
-  assert(response2.headers.get('Content-Encoding') === null);
+  assert(response2.headers.get('Content-Encoding') === 'gzip');
   const body2 = await response2.text();
   assert(body2 === test_file);
 
