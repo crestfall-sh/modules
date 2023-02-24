@@ -365,39 +365,61 @@ export const cors = (app) => {
 };
 
 /**
+ * @description Lets you serve static files with url prefixes and local directories.
+ * @todo in-memory caching, with in-memory ttl
+ * @todo gzip compression, sha224 hashing
+ * @todo cache-control, etags, 304
+ * @todo buffer transform function
  * @type {import('./uwu').serve}
  */
-export const serve = (app, base_directory, serve_transform) => {
+export const serve = (serve_options) => {
+  assert(serve_options instanceof Object);
+  const { app, index, include, exclude } = serve_options;
   assert(app instanceof Object);
-  assert(typeof base_directory === 'string');
-  assert(fs.existsSync(base_directory) === true);
-  assert(path.isAbsolute(base_directory) === true);
-  assert(serve_transform instanceof Function);
+  if (typeof index === 'string') {
+    assert(fs.existsSync(index) === true);
+    assert(path.isAbsolute(index) === true);
+  }
+  assert(include instanceof Array);
+  include.forEach((entry) => {
+    assert(entry instanceof Object);
+    assert(typeof entry.url === 'string');
+    assert(typeof entry.directory === 'string');
+    assert(fs.existsSync(entry.directory) === true);
+    assert(path.isAbsolute(entry.directory) === true);
+    const entry_directory_stat = fs.statSync(entry.directory);
+    assert(entry_directory_stat.isDirectory() === true);
+  });
+  assert(exclude instanceof Array);
   app.get('/*', (res, req) => {
-    let url_pathname = req.getUrl();
-    if (url_pathname === '/') {
-      url_pathname = '/index.html';
+    const url_pathname = req.getUrl();
+    for (let i = 0, l = exclude.length; i < l; i += 1) {
+      const url_prefix = exclude[i];
+      if (url_pathname.startsWith(url_prefix) === true) {
+        req.setYield(true);
+        return;
+      }
     }
-    if (path.extname(url_pathname) === '') {
-      req.setYield(true);
-      return;
+    let file_pathname = index;
+    for (let i = 0, l = include.length; i < l; i += 1) {
+      const entry = include[i];
+      if (url_pathname.startsWith(entry.url) === true) {
+        file_pathname = path.join(entry.directory, url_pathname);
+        break;
+      }
     }
-    const file_path = path.join(base_directory, url_pathname);
-    if (fs.existsSync(file_path) === true) {
-      const file_stat = fs.statSync(file_path);
+    if (fs.existsSync(file_pathname) === true) {
+      const file_stat = fs.statSync(file_pathname);
       if (file_stat.isFile() === true) {
         const file_name = path.basename(url_pathname);
         const file_content_type = mime_types.contentType(file_name) || null;
-        if (typeof file_content_type === 'string') {
-          res.writeStatus('200');
-          res.writeHeader('Content-Type', file_content_type);
-          res.write(serve_transform(fs.readFileSync(file_path)));
-          res.end();
-          return;
-        }
         res.writeStatus('200');
-        res.writeHeader('Content-Type', 'application/octet-stream');
-        res.write(serve_transform(fs.readFileSync(file_path)));
+        if (typeof file_content_type === 'string') {
+          res.writeHeader('Content-Type', file_content_type);
+        } else {
+          res.writeHeader('Content-Type', 'application/octet-stream');
+        }
+        res.write(fs.readFileSync(file_pathname));
         res.end();
         return;
       }

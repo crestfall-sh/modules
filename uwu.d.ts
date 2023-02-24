@@ -75,8 +75,40 @@ export const use: use;
 export type cors = (app: uws.TemplatedApp) => void;
 export const cors: cors;
 
-export type serve_transform = (buffer: Buffer) => Buffer;
-export type serve = (app: uws.TemplatedApp, base_directory: string, serve_transform: serve_transform) => void;
+export interface serve_entry {
+  /**
+   * @description URL prefix to check.
+   * @example '/assets/'
+   */
+  url: string;
+  /**
+   * @description Local directory to serve files from.
+   * @example path.join(process.cwd(), '/assets/');
+   */
+  directory: string;
+}
+export interface serve_options {
+  /**
+   * @description Your UWS Web Application.
+   */
+  app: uws.TemplatedApp;
+  /**
+   * @description Default HTML file to serve.
+   * @example '/index.html'
+   */
+  index?: string;
+  /**
+   * @description Included pairs of url prefix and local directory to be served.
+   * @example [{ url: '/assets/', directory: path.join(process.cwd(), '/assets/') }]
+   */
+  include: serve_entry[];
+  /**
+   * @description Excluded url prefixes.
+   * @example '/api/'
+   */
+  exclude: string[];
+}
+export type serve = (serve_options: serve_options) => void;
 export const serve: serve;
 
 export type http = (app: uws.TemplatedApp, port_access_type: number, port: number) => Promise<uws.us_listen_socket>;

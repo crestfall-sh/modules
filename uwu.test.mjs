@@ -32,7 +32,11 @@ const test = async () => {
   const origin = `http://localhost:${port}`;
   const app = uwu.uws.App({});
 
-  uwu.serve(app, path.join(__dirname, '/'), (buffer) => buffer);
+  uwu.serve({
+    app,
+    include: [{ url: '/', directory: process.cwd() }],
+    exclude: [],
+  });
   app.get('/test-html', uwu.use(async (response) => {
     response.html = test_html;
   }));
