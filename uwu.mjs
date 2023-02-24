@@ -382,8 +382,8 @@ export const cors = (app) => {
  * @description supports gzip compression
  * @description supports sha224 hashing for etag
  * @description supports cache-control, etag, and 304 responses
- * @todo in-memory caching with ttl
- * @todo buffer transform function
+ * @description supports in-memory caching
+ * @todo status, header, and  body transform function (allows finer access control)
  * @type {import('./uwu').serve}
  */
 export const serve = (serve_options) => {
@@ -407,6 +407,10 @@ export const serve = (serve_options) => {
   });
   assert(exclude instanceof Array);
   assert(typeof debug === 'boolean' || typeof debug === 'undefined');
+
+  const buffer_cache = new Map();
+  const gzip_buffer_cache = new Map();
+
   app.get('/*', (res, req) => {
     const request = {
       url_pathname: req.getUrl(),
@@ -432,6 +436,26 @@ export const serve = (serve_options) => {
        * @type {Buffer}
        */
       body: null,
+      /**
+       * @type {boolean}
+       */
+      use_buffer_cache: false,
+      /**
+       * @type {boolean}
+       */
+      use_gzip_buffer_cache: false,
+      /**
+       * @type {number}
+       */
+      start: Date.now(),
+      /**
+       * @type {number}
+       */
+      end: null,
+      /**
+       * @type {number}
+       */
+      took: null,
     };
     for (let i = 0, l = exclude.length; i < l; i += 1) {
       const url_prefix = exclude[i];
@@ -448,6 +472,12 @@ export const serve = (serve_options) => {
           record.headers.forEach((value, key) => {
             response.headers.set(key, value);
           });
+        }
+        if (typeof record.use_buffer_cache === 'boolean') {
+          response.use_buffer_cache = record.use_buffer_cache;
+        }
+        if (typeof record.use_gzip_buffer_cache === 'boolean') {
+          response.use_gzip_buffer_cache = record.use_gzip_buffer_cache;
         }
         break;
       }
@@ -473,11 +503,37 @@ export const serve = (serve_options) => {
         response.headers.set('Content-Type', 'application/octet-stream');
       }
 
-      const file_buffer = fs.readFileSync(request.file_pathname);
+      /**
+       * @type {Buffer}
+       */
+      let file_buffer = null;
+      if (response.use_buffer_cache === true) {
+        if (buffer_cache.has(request.file_pathname) === true) {
+          file_buffer = buffer_cache.get(request.file_pathname);
+        } else {
+          file_buffer = fs.readFileSync(request.file_pathname);
+          buffer_cache.set(request.file_pathname, file_buffer);
+        }
+      } else {
+        file_buffer = fs.readFileSync(request.file_pathname);
+      }
       response.body = file_buffer;
 
       if (req.getHeader('accept-encoding').includes('gzip') === true) {
-        const file_gzip_buffer = zlib.gzipSync(response.body);
+        /**
+         * @type {Buffer}
+         */
+        let file_gzip_buffer = null;
+        if (response.use_gzip_buffer_cache === true) {
+          if (gzip_buffer_cache.has(request.file_pathname) === true) {
+            file_gzip_buffer = gzip_buffer_cache.get(request.file_pathname);
+          } else {
+            file_gzip_buffer = zlib.gzipSync(file_buffer);
+            gzip_buffer_cache.set(request.file_pathname, file_gzip_buffer);
+          }
+        } else {
+          file_gzip_buffer = zlib.gzipSync(file_buffer);
+        }
         response.headers.set('Content-Encoding', 'gzip');
         response.body = file_gzip_buffer;
       }
@@ -489,10 +545,6 @@ export const serve = (serve_options) => {
         response.body = null;
       }
 
-      if (debug === true) {
-        console.log({ request, response });
-      }
-
       res.writeStatus(response.status);
       response.headers.forEach((value, key) => {
         res.writeHeader(key, value);
@@ -500,19 +552,23 @@ export const serve = (serve_options) => {
       if (response.body instanceof Buffer) {
         res.write(response.body);
       }
+      response.end = Date.now();
+      response.took = response.end - response.start;
       res.end();
+
+      if (debug === true) {
+        console.log({ request, response, buffer_cache, gzip_buffer_cache });
+      }
 
       return;
     } catch (e) {
       if (fs.existsSync(request.file_pathname) === true) {
-        // 403
         res.writeStatus('403');
         res.writeHeader('Content-Type', 'text/plain; charset=utf-8');
         res.write('403 Forbidden');
         res.end();
         return;
       } else {
-        // 404
         res.writeStatus('404');
         res.writeHeader('Content-Type', 'text/plain; charset=utf-8');
         res.write('404 Not Found');
