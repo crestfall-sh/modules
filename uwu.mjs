@@ -21,19 +21,41 @@ import assert from './assert.mjs';
  * @description Also allows JSON-encoding of our request.header and response.header
  */
 export class InternalHeaders extends Map {
+  /**
+   * @param {Array<[string, string]>} entries
+   */
+  constructor (entries) {
+    super(entries);
+  }
+  /**
+   * @param {string} key
+   * @returns {boolean}
+   */
   has (key) {
     assert(typeof key === 'string');
     return super.has(key.toLowerCase());
   }
+  /**
+   * @param {string} key
+   * @returns {string}
+   */
   get (key) {
     assert(typeof key === 'string');
     return super.get(key.toLowerCase());
   }
+  /**
+   * @param {string} key
+   * @param {string} value
+   * @returns {this}
+   */
   set (key, value) {
     assert(typeof key === 'string');
     assert(typeof value === 'string');
     return super.set(key.toLowerCase(), value);
   }
+  /**
+   * @returns {object}
+   */
   toJSON () {
     const json = {};
     super.forEach((value, key) => {
@@ -48,6 +70,9 @@ export class InternalHeaders extends Map {
  * @description also allows JSON-encoding of our request.query
  */
 export class InternalURLSearchParams extends URLSearchParams {
+  /**
+   * @returns {object}
+   */
   toJSON () {
     const json = {};
     super.forEach((value, key) => {

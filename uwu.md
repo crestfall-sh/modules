@@ -2,6 +2,10 @@
 
 ## changelog
 
+### v1.23.11
+
+- improve `serve(options)`, fix types.
+
 ### v1.23.1
 
 - add `response.error_write_message` as `boolean`, this will write error messages to the response body.

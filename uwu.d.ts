@@ -1,8 +1,8 @@
 import stream from 'stream';
 import * as uws from 'uWebSockets.js';
 
-export class InternalHeaders extends Map<string, string> {}
-export class InternalURLSearchParams extends URLSearchParams {}
+export type InternalHeaders = Map<string, string>;
+export type InternalURLSearchParams = URLSearchParams;
 
 export interface cache_control_types {
   /**

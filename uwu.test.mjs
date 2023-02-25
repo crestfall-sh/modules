@@ -27,6 +27,9 @@ const test_file = fs.readFileSync(__filename, { encoding: 'utf-8' });
 
 const test = async () => {
 
+  /**
+   * @type {import('./uwu').InternalHeaders}
+   */
   const headers = new InternalHeaders([['Cache-Control', 'no-store']]);
   {
     const entries = Array.from(headers.entries());
