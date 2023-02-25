@@ -34,7 +34,7 @@ const test = async () => {
 
   uwu.serve({
     app,
-    include: [{ url: '/', directory: process.cwd(), use_buffer_cache: true, use_gzip_buffer_cache: true }],
+    include: [{ url: '/', directory: process.cwd(), use_cache: true }],
     exclude: ['/api/'],
     debug: true,
   });

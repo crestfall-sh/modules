@@ -382,7 +382,7 @@ export const cors = (app) => {
  * @description supports gzip compression
  * @description supports sha224 hashing for etag
  * @description supports cache-control, etag, and 304 responses
- * @description supports in-memory caching
+ * @description supports optional in-memory caching of buffers
  * @todo status, header, and  body transform function (allows finer access control)
  * @type {import('./uwu').serve}
  */
@@ -408,8 +408,10 @@ export const serve = (serve_options) => {
   assert(exclude instanceof Array);
   assert(typeof debug === 'boolean' || typeof debug === 'undefined');
 
-  const buffer_cache = new Map();
-  const gzip_buffer_cache = new Map();
+  /**
+   * @type {Map<string, import('./uwu').serve_cache_record>}
+   */
+  const cache = new Map();
 
   app.get('/*', (res, req) => {
     const request = {
@@ -439,11 +441,7 @@ export const serve = (serve_options) => {
       /**
        * @type {boolean}
        */
-      use_buffer_cache: false,
-      /**
-       * @type {boolean}
-       */
-      use_gzip_buffer_cache: false,
+      use_cache: false,
       /**
        * @type {number}
        */
@@ -473,11 +471,8 @@ export const serve = (serve_options) => {
             response.headers.set(key, value);
           });
         }
-        if (typeof record.use_buffer_cache === 'boolean') {
-          response.use_buffer_cache = record.use_buffer_cache;
-        }
-        if (typeof record.use_gzip_buffer_cache === 'boolean') {
-          response.use_gzip_buffer_cache = record.use_gzip_buffer_cache;
+        if (typeof record.use_cache === 'boolean') {
+          response.use_cache = record.use_cache;
         }
         break;
       }
@@ -503,44 +498,45 @@ export const serve = (serve_options) => {
         response.headers.set('Content-Type', 'application/octet-stream');
       }
 
-      /**
-       * @type {Buffer}
-       */
-      let file_buffer = null;
-      if (response.use_buffer_cache === true) {
-        if (buffer_cache.has(request.file_pathname) === true) {
-          file_buffer = buffer_cache.get(request.file_pathname);
-        } else {
-          file_buffer = fs.readFileSync(request.file_pathname);
-          buffer_cache.set(request.file_pathname, file_buffer);
+      if (response.use_cache === true) {
+        if (cache.has(request.file_pathname) === false) {
+          const buffer = fs.readFileSync(request.file_pathname);
+          const buffer_hash = crypto.createHash('sha224').update(buffer).digest('hex');
+          const gzip_buffer = zlib.gzipSync(buffer);
+          const gzip_buffer_hash = crypto.createHash('sha224').update(gzip_buffer).digest('hex');
+          /**
+           * @type {import('./uwu').serve_cache_record}
+           */
+          const cache_record = { buffer, buffer_hash, gzip_buffer, gzip_buffer_hash };
+          cache.set(request.file_pathname, cache_record);
         }
-      } else {
-        file_buffer = fs.readFileSync(request.file_pathname);
       }
-      response.body = file_buffer;
+
+      if (response.use_cache === true) {
+        const cached = cache.get(request.file_pathname);
+        response.headers.set('ETag', cached.buffer_hash);
+        response.body = cached.buffer;
+      } else {
+        response.body = fs.readFileSync(request.file_pathname);
+      }
 
       if (req.getHeader('accept-encoding').includes('gzip') === true) {
-        /**
-         * @type {Buffer}
-         */
-        let file_gzip_buffer = null;
-        if (response.use_gzip_buffer_cache === true) {
-          if (gzip_buffer_cache.has(request.file_pathname) === true) {
-            file_gzip_buffer = gzip_buffer_cache.get(request.file_pathname);
-          } else {
-            file_gzip_buffer = zlib.gzipSync(file_buffer);
-            gzip_buffer_cache.set(request.file_pathname, file_gzip_buffer);
-          }
-        } else {
-          file_gzip_buffer = zlib.gzipSync(file_buffer);
-        }
         response.headers.set('Content-Encoding', 'gzip');
-        response.body = file_gzip_buffer;
+        if (response.use_cache === true) {
+          const cached = cache.get(request.file_pathname);
+          response.headers.set('ETag', cached.gzip_buffer_hash);
+          response.body = cached.gzip_buffer;
+        } else {
+          response.body = zlib.gzipSync(response.body);
+        }
       }
 
-      const response_buffer_hash = crypto.createHash('sha224').update(response.body).digest('hex');
-      response.headers.set('Content-ETag', response_buffer_hash);
-      if (req.getHeader('if-none-match') === response_buffer_hash) {
+      if (response.headers.has('ETag') === false) {
+        const hash = crypto.createHash('sha224').update(response.body).digest('hex');
+        response.headers.set('ETag', hash);
+      }
+
+      if (req.getHeader('if-none-match') === response.headers.get('ETag')) {
         response.status = '304';
         response.body = null;
       }
@@ -557,7 +553,7 @@ export const serve = (serve_options) => {
       res.end();
 
       if (debug === true) {
-        console.log({ request, response, buffer_cache, gzip_buffer_cache });
+        console.log({ request, response, cache });
       }
 
       return;

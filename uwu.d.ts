@@ -87,6 +87,12 @@ export const use: use;
 export type cors = (app: uws.TemplatedApp) => void;
 export const cors: cors;
 
+export interface serve_cache_record {
+  buffer: Buffer;
+  buffer_hash: string;
+  gzip_buffer: Buffer;
+  gzip_buffer_hash: string;
+}
 export interface serve_record {
   /**
    * @description URL prefix to check.
@@ -106,11 +112,7 @@ export interface serve_record {
   /**
    * @description Enable in-memory caching of buffers.
    */
-  use_buffer_cache?: boolean;
-  /**
-   * @description Enable in-memory caching of gzip buffers.
-   */
-  use_gzip_buffer_cache?: boolean;
+  use_cache?: boolean;
 }
 export interface serve_options {
   /**
@@ -130,7 +132,8 @@ export interface serve_options {
    *   {
    *     url: '/assets/',
    *     directory: path.join(process.cwd(), '/assets/'),
-   *     headers: new Map([['Cache-Control', 'no-store']])
+   *     headers: new Map([['Cache-Control', 'no-store']]),
+   *     use_cache: true,
    *   }
    * ]
    */
