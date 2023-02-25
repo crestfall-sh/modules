@@ -8,6 +8,7 @@ import worker_threads from 'worker_threads';
 import fetch from 'node-fetch';
 import assert from './assert.mjs';
 import * as uwu from './uwu.mjs';
+import { InternalHeaders } from './uwu.mjs';
 import * as proc from './proc.mjs';
 
 const __filename = url.fileURLToPath(import.meta.url);
@@ -25,6 +26,25 @@ const test_html = `
 const test_file = fs.readFileSync(__filename, { encoding: 'utf-8' });
 
 const test = async () => {
+
+  const headers = new InternalHeaders([['Cache-Control', 'no-store']]);
+  {
+    const entries = Array.from(headers.entries());
+    assert(entries.length === 1);
+    const entry = entries[0];
+    assert(entry instanceof Array);
+    const [key, value] = entry;
+    assert(key === 'cache-control');
+    assert(value === 'no-store');
+    console.log({ key, value });
+  }
+  {
+    headers.forEach((value, key) => {
+      assert(key === 'cache-control');
+      assert(value === 'no-store');
+      console.log({ key, value });
+    });
+  }
 
   console.log({ __filename, __dirname, __cwd, pid: process.pid, wid: worker_threads.threadId });
 
