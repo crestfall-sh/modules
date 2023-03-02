@@ -22,7 +22,7 @@ import assert from './assert.mjs';
  */
 export class InternalHeaders extends Map {
   /**
-   * @param {Array<[string, string]>} entries
+   * @param {Array<[string, string]>} [entries]
    */
   constructor (entries) {
     super(entries);
