@@ -2,22 +2,17 @@
 
 // uWebSocket.js Utilities
 
-/**
- * Deprecated, use web.mjs instead.
- */
-console.error('uwu.mjs deprecated, use web.mjs instead.');
-
 import fs from 'fs';
 import path from 'path';
+import assert from 'assert';
 import crypto from 'crypto';
 import stream from 'stream';
 import zlib from 'zlib';
 import mime_types from 'mime-types';
 import { default as uws } from 'uWebSockets.js';
-import assert from './assert.mjs';
 
 /**
- * @type {import('./uwu').InternalHeaders}
+ * @type {import('./web').InternalHeaders}
  * @description Complies with RFC 7230 Case-Insensitive Headers
  * @description Each header field consists of a case-insensitive field name followed
  * by a colon (":"), optional leading whitespace, the field value, and
@@ -71,7 +66,7 @@ export class InternalHeaders extends Map {
 }
 
 /**
- * @type {import('./uwu').InternalURLSearchParams}
+ * @type {import('./web').InternalURLSearchParams}
  * @description also allows JSON-encoding of our request.query
  */
 export class InternalURLSearchParams extends URLSearchParams {
@@ -88,7 +83,7 @@ export class InternalURLSearchParams extends URLSearchParams {
 }
 
 /**
- * @type {import('./uwu').cache_control_types}
+ * @type {import('./web').cache_control_types}
  */
 export const cache_control_types = {
   /**
@@ -109,21 +104,18 @@ export const cache_control_types = {
   public_cache: 'public, max-age=86400, s-maxage=86400',
 };
 
-
 /**
- * @type {import('./uwu').port_access_types}
+ * @type {import('./web').port_access_types}
  */
 export const port_access_types = { SHARED: 0, EXCLUSIVE: 1 };
 
-
 /**
- * @type {Map<string, import('./uwu').cached_file>}
+ * @type {Map<string, import('./web').cached_file>}
  */
 const file_cache = new Map();
 
-
 /**
- * @type {import('./uwu').apply}
+ * @type {import('./web').apply<any>}
  */
 const apply = async (res, middlewares, response, request) => {
   try {
@@ -181,7 +173,7 @@ const apply = async (res, middlewares, response, request) => {
             const buffer = fs.readFileSync(response.file_path);
             const timestamp = Date.now();
             /**
-             * @type {import('./uwu').cached_file}
+             * @type {import('./web').cached_file}
              */
             const cached_file = { file_name, file_content_type, buffer, timestamp };
             file_cache.set(response.file_path, cached_file);
@@ -278,7 +270,7 @@ const apply = async (res, middlewares, response, request) => {
 };
 
 /**
- * @type {import('./uwu').use}
+ * @type {import('./web').use}
  */
 export const use = (...middlewares) => {
 
@@ -287,7 +279,7 @@ export const use = (...middlewares) => {
   });
 
   /**
-   * @type {import('./uwu').uws_handler}
+   * @type {import('./web').uws_handler}
    */
   const uws_handler = (res, req) => {
 
@@ -300,14 +292,15 @@ export const use = (...middlewares) => {
     assert(req.getHeader instanceof Function);
 
     /**
-     * @type {import('./uwu').request}
+     * @type {import('./web').request}
      */
     const request = {
       url: req.getUrl(),
       method: req.getMethod(),
       headers: new InternalHeaders(),
       search_params: new InternalURLSearchParams(req.getQuery()),
-      ip_address: Buffer.from(res.getRemoteAddressAsText()).toString(),
+      remote_address: Buffer.from(res.getRemoteAddressAsText()).toString(),
+      proxied_remote_address: Buffer.from(res.getProxiedRemoteAddressAsText()).toString(),
       buffer: null,
       json: null,
       parts: null,
@@ -320,7 +313,7 @@ export const use = (...middlewares) => {
     });
 
     /**
-     * @type {import('./uwu').response}
+     * @type {import('./web').response}
      */
     const response = {
 
@@ -346,6 +339,9 @@ export const use = (...middlewares) => {
       stream: null,
 
     };
+    res.onAborted(() => {
+      response.aborted = true;
+    });
     switch (request.method) {
       case 'post':
       case 'put':
@@ -373,9 +369,6 @@ export const use = (...middlewares) => {
             process.nextTick(apply, res, middlewares, response, request);
           }
         });
-        res.onAborted(() => {
-          response.aborted = true;
-        });
         break;
       }
       default: {
@@ -388,7 +381,7 @@ export const use = (...middlewares) => {
 };
 
 /**
- * @type {import('./uwu').cors}
+ * @type {import('./web').cors}
  */
 export const cors = (app) => {
   app.options('/*', use(async (response, request) => {
@@ -414,41 +407,77 @@ export const cors = (app) => {
  * @description supports cache-control, etag, and 304 responses
  * @description supports optional in-memory caching of buffers
  * @todo status, header, and  body transform function (allows finer access control)
- * @type {import('./uwu').serve}
+ * @type {import('./web').serve}
  */
 export const serve = (serve_options) => {
   assert(serve_options instanceof Object);
-  const { app, index, include, exclude, debug } = serve_options;
+  const { app, include, exclude, debug } = serve_options;
   assert(app instanceof Object);
-  assert(typeof index === 'string' || typeof index === 'undefined');
-  if (typeof index === 'string') {
-    assert(fs.existsSync(index) === true);
-    assert(path.isAbsolute(index) === true);
-  }
   assert(include instanceof Array);
-  include.forEach((entry) => {
-    assert(entry instanceof Object);
-    assert(typeof entry.url === 'string');
-    assert(typeof entry.directory === 'string');
-    assert(fs.existsSync(entry.directory) === true);
-    assert(path.isAbsolute(entry.directory) === true);
-    const entry_directory_stat = fs.statSync(entry.directory);
+  include.forEach((record) => {
+    assert(record instanceof Object);
+    assert(typeof record.url === 'string');
+    assert(typeof record.directory === 'string');
+    assert(fs.existsSync(record.directory) === true);
+    assert(path.isAbsolute(record.directory) === true);
+    const entry_directory_stat = fs.statSync(record.directory);
     assert(entry_directory_stat.isDirectory() === true);
   });
   assert(exclude instanceof Array);
   assert(typeof debug === 'boolean' || typeof debug === 'undefined');
 
   /**
-   * @type {Map<string, import('./uwu').serve_cache_record>}
+   * Normalizes the URLs. Mutates "/images/" into "/images"
+   */
+  include.forEach((record) => {
+    if (record.url.length > 1) {
+      if (record.url.endsWith('/') === true) {
+        record.url = record.url.substring(0, record.url.length - 1);
+      }
+    }
+  });
+
+  /**
+   * Sorts the URLs. "/images" first, "/" last.
+   */
+  include.sort((a, b) => b.url.length - a.url.length);
+
+  /**
+   * @type {Map<string, import('./web').serve_cache_record>}
    */
   const cache = new Map();
 
   app.get('/*', (res, req) => {
     const request = {
-      url_pathname: req.getUrl(),
-      file_pathname: index || null,
+      /**
+       * @type {string}
+       */
+      url: req.getUrl(),
+      /**
+       * @type {string}
+       */
+      url_dirname: null,
+      /**
+       * @type {string}
+       */
+      url_basename: null,
+      /**
+       * @type {string}
+       */
+      url_extname: null,
+      /**
+       * @type {string}
+       */
+      url_relative: null,
+      /**
+       * @type {string}
+       */
+      url_absolute: null,
       headers: new InternalHeaders(),
     };
+    request.url_dirname = path.dirname(request.url);
+    request.url_basename = path.basename(request.url);
+    request.url_extname = path.extname(request.url);
     req.forEach((key, value) => {
       request.headers.set(key, value);
     });
@@ -463,7 +492,7 @@ export const serve = (serve_options) => {
       /**
        * @type {Map<string, string>}
        */
-      headers: new InternalHeaders([['Cache-Control', cache_control_types.no_store]]),
+      headers: new InternalHeaders([['Cache-Control', cache_control_types.no_cache]]),
       /**
        * @type {Buffer}
        */
@@ -487,15 +516,42 @@ export const serve = (serve_options) => {
     };
     for (let i = 0, l = exclude.length; i < l; i += 1) {
       const url_prefix = exclude[i];
-      if (request.url_pathname.startsWith(url_prefix) === true) {
-        req.setYield(true);
+      if (request.url.startsWith(url_prefix) === true) {
+        /**
+         * Previously:
+         * - res.setYield(true);
+         * Replaced with:
+         * - 404
+         * Rationale:
+         * - For URL /api/example we hit the handlers: "/api/example" and "/*"
+         * - For URL /api/example2 we hit the handlers: "/*"
+         * - Conclusion: handler "/*" must 404 because it is our catch-all handler.
+         */
+        res.writeStatus('404');
+        res.write('404 Not Found');
+        res.end();
         return;
       }
     }
     for (let i = 0, l = include.length; i < l; i += 1) {
       const record = include[i];
-      if (request.url_pathname.startsWith(record.url) === true) {
-        request.file_pathname = path.join(record.directory, request.url_pathname);
+      if (request.url_dirname.startsWith(record.url) === true) {
+        /**
+         * Self-explanatory.
+         */
+        if (request.url_basename === '' || request.url_extname === '') {
+          request.url = path.join(request.url, 'index.html');
+          request.url_dirname = path.dirname(request.url);
+          request.url_basename = path.basename(request.url);
+          request.url_extname = path.extname(request.url);
+        }
+        /**
+         * New fix:
+         * - Concepts of "base url", "base directory"
+         * - Concepts of "url relative path", "url absolute path"
+         */
+        request.url_relative = request.url.substring(record.url.length);
+        request.url_absolute = path.join(record.directory, request.url_relative);
         if (record.headers instanceof Map) {
           record.headers.forEach((value, key) => {
             response.headers.set(key, value);
@@ -504,22 +560,25 @@ export const serve = (serve_options) => {
         if (typeof record.use_cache === 'boolean') {
           response.use_cache = record.use_cache;
         }
+        if (debug === true) {
+          console.log({ record, request });
+        }
         break;
       }
     }
-    if (request.file_pathname === null) {
+    if (request.url_absolute === null) {
       req.setYield(true);
       return;
     }
 
     try {
 
-      fs.accessSync(request.file_pathname, fs.constants.R_OK);
+      fs.accessSync(request.url_absolute, fs.constants.R_OK);
 
-      const file_stat = fs.statSync(request.file_pathname);
+      const file_stat = fs.statSync(request.url_absolute);
       assert(file_stat.isFile() === true);
 
-      const file_name = path.basename(request.url_pathname);
+      const file_name = request.url_basename;
       const file_content_type = mime_types.contentType(file_name) || null;
 
       if (typeof file_content_type === 'string') {
@@ -529,31 +588,31 @@ export const serve = (serve_options) => {
       }
 
       if (response.use_cache === true) {
-        if (cache.has(request.file_pathname) === false) {
-          const buffer = fs.readFileSync(request.file_pathname);
+        if (cache.has(request.url_absolute) === false) {
+          const buffer = fs.readFileSync(request.url_absolute);
           const buffer_hash = crypto.createHash('sha224').update(buffer).digest('hex');
           const gzip_buffer = zlib.gzipSync(buffer);
           const gzip_buffer_hash = crypto.createHash('sha224').update(gzip_buffer).digest('hex');
           /**
-           * @type {import('./uwu').serve_cache_record}
+           * @type {import('./web').serve_cache_record}
            */
           const cache_record = { buffer, buffer_hash, gzip_buffer, gzip_buffer_hash };
-          cache.set(request.file_pathname, cache_record);
+          cache.set(request.url_absolute, cache_record);
         }
       }
 
       if (response.use_cache === true) {
-        const cached = cache.get(request.file_pathname);
+        const cached = cache.get(request.url_absolute);
         response.headers.set('ETag', cached.buffer_hash);
         response.body = cached.buffer;
       } else {
-        response.body = fs.readFileSync(request.file_pathname);
+        response.body = fs.readFileSync(request.url_absolute);
       }
 
       if (req.getHeader('accept-encoding').includes('gzip') === true) {
         response.headers.set('Content-Encoding', 'gzip');
         if (response.use_cache === true) {
-          const cached = cache.get(request.file_pathname);
+          const cached = cache.get(request.url_absolute);
           response.headers.set('ETag', cached.gzip_buffer_hash);
           response.body = cached.gzip_buffer;
         } else {
@@ -588,7 +647,8 @@ export const serve = (serve_options) => {
 
       return;
     } catch (e) {
-      if (fs.existsSync(request.file_pathname) === true) {
+      console.error(e);
+      if (fs.existsSync(request.url_absolute) === true) {
         res.writeStatus('403');
         res.writeHeader('Content-Type', 'text/plain; charset=utf-8');
         res.write('403 Forbidden');
@@ -606,7 +666,7 @@ export const serve = (serve_options) => {
 };
 
 /**
- * @type {import('./uwu').http}
+ * @type {import('./web').http}
  */
 export const http = (app, port_access_type, port) => new Promise((resolve, reject) => {
   assert(app instanceof Object);

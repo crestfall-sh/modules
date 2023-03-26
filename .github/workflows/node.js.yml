@@ -74,5 +74,5 @@ jobs:
     - name: Run casefold tests
       run: node ./casefold.test.mjs
 
-    - name: Run uwu tests
-      run: node ./uwu.test.mjs
+    - name: Run web tests
+      run: node ./web.test.mjs

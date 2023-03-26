@@ -1,5 +1,10 @@
 // @ts-check
 
+/**
+ * Deprecated, use web.mjs instead.
+ */
+console.error('uwu.mjs deprecated, use web.mjs instead.');
+
 import os from 'os';
 import fs from 'fs';
 import url from 'url';
