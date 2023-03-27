@@ -73,6 +73,10 @@ export interface payload {
    */
   email?: string;
   /**
+   * phone number
+   */
+  phone?: string;
+  /**
    * roles
    * - lower-kebab-case, comma-delimited
    */
@@ -91,10 +95,9 @@ export interface payload {
    */
   refresh_token?: string;
   /**
-   * typesense token
+   * other tokens, e.g. for search, storage, etc.
    */
-  typesense_token?: string;
-
+  others?: Record<string, string>;
 }
 
 export interface token_data {
