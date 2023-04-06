@@ -540,6 +540,7 @@ export const serve = (serve_options) => {
          * Self-explanatory.
          */
         if (request.url_basename === '' || request.url_extname === '') {
+          request.url = request.url.substring(0, request.url.length - request.url_basename.length);
           request.url = path.join(request.url, 'index.html');
           request.url_dirname = path.dirname(request.url);
           request.url_basename = path.basename(request.url);
