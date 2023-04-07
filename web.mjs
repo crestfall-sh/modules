@@ -215,10 +215,12 @@ const apply = async (res, middlewares, response, request) => {
     }
 
     res.writeStatus(String(response.status));
+    response.status_written = true;
 
     response.headers.forEach((value, key) => {
       res.writeHeader(key, value);
     });
+    response.headers_written = true;
 
     assert(response.buffer instanceof Buffer || response.buffer === null);
 
@@ -258,14 +260,31 @@ const apply = async (res, middlewares, response, request) => {
   } catch (e) {
     response.error = e;
     if (response.aborted === false) {
-      res.writeStatus('500');
-      if (response.error_write_message === true) {
-        res.writeHeader('Content-Type', 'text/plain; charset=utf-8');
-        res.write(e.message);
+      if (response.status_written === false) {
+        if (typeof response.error_status === 'string') {
+          res.writeStatus(response.error_status);
+        } else {
+          res.writeStatus('500');
+        }
+        response.status_written = true;
+        if (response.headers_written === false) {
+          if (response.error_write_message === true) {
+            response.headers.set('Content-Type', 'text/plain; charset=utf-8');
+          }
+          response.headers.forEach((value, key) => {
+            res.writeHeader(key, value);
+          });
+          response.headers_written = true;
+          if (response.error_write_message === true) {
+            res.write(e.message);
+          }
+        }
       }
       res.end();
     }
-    console.error(e);
+    if (response.error_console_message === true) {
+      console.error(e);
+    }
   }
 };
 
@@ -320,10 +339,14 @@ export const use = (...middlewares) => {
       aborted: false,
       ended: false,
       error: null,
+      error_status: null,
       error_write_message: false,
+      error_console_message: true,
 
       status: 200,
+      status_written: false,
       headers: new InternalHeaders([['Cache-Control', cache_control_types.no_store]]),
+      headers_written: false,
 
       file_path: null,
       file_name: null,

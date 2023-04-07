@@ -37,10 +37,15 @@ export interface response {
   aborted: boolean;
   ended: boolean;
   error: Error;
-  error_write_message: boolean;
+  error_status: string; // overwrite the error status if doing assertion checks; defaults to error 500.
+  error_write_message: boolean; // write error to response, defaults to false.
+  error_console_message: boolean; // write error to console, defaults to true.
 
   status: number;
+  status_written: boolean;
+
   headers: InternalHeaders;
+  headers_written: boolean;
 
   file_path: string;
   file_name: string;
