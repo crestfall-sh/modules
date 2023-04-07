@@ -336,6 +336,8 @@ export const use = (...middlewares) => {
      */
     const response = {
 
+      assert: null,
+
       aborted: false,
       ended: false,
       error: null,
@@ -362,6 +364,21 @@ export const use = (...middlewares) => {
       stream: null,
 
     };
+
+    /**
+     * @param {boolean} value
+     * @param {string} error_status
+     * @param {string} error_message
+     */
+    response.assert = (value, error_status, error_message) => {
+      try {
+        assert(value, error_message);
+      } catch (e) {
+        response.error_status = error_status;
+        throw e;
+      }
+    };
+
     res.onAborted(() => {
       response.aborted = true;
     });

@@ -34,6 +34,8 @@ export const port_access_types: port_access_types;
 
 export interface response {
 
+  assert: (value: boolean, error_status: string, error_message: string) => void;
+
   aborted: boolean;
   ended: boolean;
   error: Error;
