@@ -34,12 +34,12 @@ export const port_access_types: port_access_types;
 
 export interface response {
 
-  assert: (value: boolean, error_status: string, error_message: string) => void;
+  assert: (value: boolean, error_status: number, error_message: string) => void;
 
   aborted: boolean;
   ended: boolean;
   error: Error;
-  error_status: string; // overwrite the error status if doing assertion checks; defaults to error 500.
+  error_status: number; // overwrite the error status if doing assertion checks; defaults to error 500.
   error_write_message: boolean; // write error to response, defaults to false.
   error_console_message: boolean; // write error to console, defaults to true.
 

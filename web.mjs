@@ -261,8 +261,8 @@ const apply = async (res, middlewares, response, request) => {
     response.error = e;
     if (response.aborted === false) {
       if (response.status_written === false) {
-        if (typeof response.error_status === 'string') {
-          res.writeStatus(response.error_status);
+        if (typeof response.error_status === 'number') {
+          res.writeStatus(String(response.error_status));
         } else {
           res.writeStatus('500');
         }
@@ -367,7 +367,7 @@ export const use = (...middlewares) => {
 
     /**
      * @param {boolean} value
-     * @param {string} error_status
+     * @param {number} error_status
      * @param {string} error_message
      */
     response.assert = (value, error_status, error_message) => {
