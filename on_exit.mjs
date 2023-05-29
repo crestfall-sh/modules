@@ -20,7 +20,8 @@ const on_exit = (callback) => {
    */
   const on_process_signal = (signal) => {
     assert(typeof signal === 'string');
-    console.log(`\nPlayground: Process signal ${signal}`);
+    console.log('\n');
+    console.log(`on_exit: process signal ${signal}`);
     process.exit(0);
   };
   /**
@@ -28,7 +29,7 @@ const on_exit = (callback) => {
    */
   const on_process_exit = (code) => {
     assert(typeof code === 'number');
-    console.log(`Playground: Process exit code ${code}`);
+    console.log(`on_exit: process exit code ${code}`);
     callback();
   };
   process.on('SIGTERM', on_process_signal);
